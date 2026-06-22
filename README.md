@@ -12,7 +12,7 @@ A brief description of the application here. Lorem ipsum dolor sit amet, consect
 
 ### Elevator pitch
 
-People with ADHD struggle with completing small tasks. When a task crosses their mind, if they don't complete it at that moment, they are unlikely to remember it later thus it is never completed. Usually, these people will find their own methods to combat this, like placing sticky notes everywhere, often to minimal success. This app seeks to emulate these methods in a quick and easy to use manner. Essentially, a glorified sticky note that doesn't require you to stop and grab a pen and some paper.
+People with ADHD struggle with completing small tasks. When a task crosses their mind and they don't complete it immediately, they are unlikely to remember and complete it later. Various individuals develope niche strategies to combat this, such as placing sticky notes in visible areas. This app seeks to emulate these methods in a quick and easy to use manner. Essentially, a custom tool with a focus on low barrier of entry.
 
 ### Design
 
