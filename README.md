@@ -12,7 +12,7 @@ A brief description of the application here. Lorem ipsum dolor sit amet, consect
 
 ### Elevator pitch
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+People with ADHD struggle with completing small tasks. When a task crosses their mind, if they don't complete it at that moment, they are unlikely to remember it later thus it is never completed. Usually, these people will find their own methods to combat this, like placing sticky notes everywhere, often to minimal success. This app seeks to emulate these methods in a quick and easy to use manner. Essentially, a glorified sticky note that doesn't require you to stop and grab a pen and some paper.
 
 ### Design
 
