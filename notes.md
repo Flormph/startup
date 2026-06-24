@@ -2,8 +2,7 @@
 
 This file represents what I have learned about web programming.
 
-- [My startup](https://startup.cs260.click)
-- [My simon](https://simon.cs260.click)
+- [My startup WIP](https://google.com)
 
 ## Helpful links
 
@@ -13,12 +12,12 @@ This file represents what I have learned about web programming.
 
 ## AWS
 
-Interesting things I have learned about AWS
+AWS is the server manager product we are using in this class.
 
 ## HTML
 
-Interesting things I have learned about HTML
+HTML is the skeletal structure of my startup.
 
 ## React
 
-Interesting things I have learned about React
+React is a framework that is particularly suited for communicating between mobile and desktop.
