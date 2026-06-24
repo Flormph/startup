@@ -2,7 +2,12 @@
 
 [My Notes](notes.md)
 
-A brief description of the application here. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+##6/22/26
+    -Added Elevator pitch
+
+##6/24/26
+    -Added Key features
+    -Added Technologies
 
 > [!NOTE]
 > This is a template for your startup application. You must modify this `README.md` file for each phase of your development. You only need to fill in the section for each deliverable when that deliverable is submitted in Canvas. Without completing the section for a deliverable, the TA will not know what to look for when grading your submission. Feel free to add additional information to each deliverable description, but make sure you at least have the list of rubric items and a description of what you did for each item.
@@ -38,12 +43,12 @@ sequenceDiagram
 
 I am going to use the required technologies in the following ways.
 
-- **HTML** - Description here
-- **CSS** - Description here
-- **React** - Create the in hand environment users will access.
-- **Service** - Description here
-- **DB/Login** - Store user information as well as universal application information required for function.
-- **WebSocket** - Allow clients and the server to communicate in real-time.
+- **HTML** - Basic structural and organizational elements.
+- **CSS** - Styling and animation.
+- **React** - Componentization, routing, and user reactivity using the React framework and JavaScript.
+- **Service** - Endpoints provided by your backend service that support authentication and application specific functionality. The weather API [Weatherstack](https://weatherstack.com/?utm_source=Github&utm_medium=Referral&utm_campaign=Public-apis-repo-Best-sellers) will be used to emulate weather for the pet in the online element of the tool.
+- **DB/Login** - Store authentication and application data.
+- **WebSocket** - Realtime information pushed from your backend to your frontend.
 
 ## 🚀 Specification Deliverable
 
@@ -52,11 +57,11 @@ I am going to use the required technologies in the following ways.
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] I completed the prerequisites for this deliverable (Git commit requirement)
-- [ ] Proper use of Markdown
-- [ ] A concise and compelling elevator pitch
-- [ ] Description of key features
-- [ ] Description of how you will use each technology
+- [X] I completed the prerequisites for this deliverable (Git commit requirement)
+- [X] Proper use of Markdown
+- [X] A concise and compelling elevator pitch
+- [X] Description of key features
+- [X] Description of how you will use each technology
 - [ ] One or more rough sketches of your application. Images must be embedded in this file using Markdown image references.
 
 ## 🚀 AWS deliverable
