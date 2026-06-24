@@ -40,10 +40,10 @@ I am going to use the required technologies in the following ways.
 
 - **HTML** - Description here
 - **CSS** - Description here
-- **React** - Description here
+- **React** - Create the in hand environment users will access.
 - **Service** - Description here
-- **DB/Login** - Description here
-- **WebSocket** - Description here
+- **DB/Login** - Store user information as well as universal application information required for function.
+- **WebSocket** - Allow clients and the server to communicate in real-time.
 
 ## 🚀 Specification Deliverable
 
