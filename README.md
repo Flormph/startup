@@ -29,9 +29,10 @@ sequenceDiagram
 
 ### Key features
 
-- Describe your key feature
-- Describe your key feature
-- Describe your key feature
+- Local environment where the tool functions quickly.
+- Online environment where extra features such as games or cosmetics can be accessed.
+- Games, Cosmetics, Leaderboards, etc.
+- Functions to create motivation and competition to inspire followthrough on tasks.
 
 ### Technologies
 
