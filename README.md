@@ -2,18 +2,15 @@
 
 [My Notes](notes.md)
 
-##6/22/26
+## Changelog
+
+### 6/22/26
     -Added Elevator pitch
 
-##6/24/26
+### 6/24/26
     -Added Key features
     -Added Technologies
-
-> [!NOTE]
-> This is a template for your startup application. You must modify this `README.md` file for each phase of your development. You only need to fill in the section for each deliverable when that deliverable is submitted in Canvas. Without completing the section for a deliverable, the TA will not know what to look for when grading your submission. Feel free to add additional information to each deliverable description, but make sure you at least have the list of rubric items and a description of what you did for each item.
-
-> [!NOTE]
-> If you are not familiar with Markdown then you should review the [documentation](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax) before continuing.
+    -Added Design as well as mockups
 
 ### Elevator pitch
 
@@ -21,16 +18,13 @@ People with ADHD struggle with completing small tasks. When a task crosses their
 
 ### Design
 
-![Design image](placeholder.png)
+### Task Tool
+![Task Tool](/Assets/Task%20screen%20mockup.jpg)
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+### Pet tool
+![Pet Tool](/Assets/Pet%20screen%20mockup.jpg)
 
-```mermaid
-sequenceDiagram
-    actor You
-    actor Website
-    You->>Website: Replace this with your design
-```
+The app will have two major components, a task tool (Mockup 1) and a pet game (Mockup 2). The first tool shouldn't require internet and should have a very short startup time as well. The goal here is to reduce friction as much as possible. The second is to help encourage use of the first by tying pet health/happiness to successful usage/follow through on the first tool.
 
 ### Key features
 
@@ -62,7 +56,7 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 - [X] A concise and compelling elevator pitch
 - [X] Description of key features
 - [X] Description of how you will use each technology
-- [ ] One or more rough sketches of your application. Images must be embedded in this file using Markdown image references.
+- [X] One or more rough sketches of your application. Images must be embedded in this file using Markdown image references.
 
 ## 🚀 AWS deliverable
 
