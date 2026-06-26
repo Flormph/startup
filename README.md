@@ -27,6 +27,8 @@ People with ADHD struggle with completing small tasks. When a task crosses their
 ### Pet tool
 ![Pet Tool](/Assets/Pet%20screen%20mockup%20scaled.jpg)
 
+### Overview
+
 The app will have two major components, a task tool (Mockup 1) and a pet game (Mockup 2). The first tool shouldn't require internet and should have a very short startup time as well. The goal here is to reduce friction as much as possible. The second is to help encourage use of the first by tying pet health/happiness to successful usage/follow through on the first tool.
 
 ### Key features
