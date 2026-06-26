@@ -12,6 +12,9 @@
     -Added Technologies
     -Added Design as well as mockups
 
+### 6/26/26
+    -Added scaled versions of mockups to README.md
+
 ### Elevator pitch
 
 People with ADHD struggle with completing small tasks. When a task crosses their mind and they don't complete it immediately, they are unlikely to remember and complete it later. Various individuals develope niche strategies to combat this, such as placing sticky notes in visible areas. This app seeks to emulate these methods in a quick and easy to use manner. Essentially, a custom tool with a focus on low barrier of entry.
@@ -19,10 +22,10 @@ People with ADHD struggle with completing small tasks. When a task crosses their
 ### Design
 
 ### Task Tool
-![Task Tool](/Assets/Task%20screen%20mockup.jpg)
+![Task Tool](/Assets/Task%20screen%20mockup%20scaled.jpg)
 
 ### Pet tool
-![Pet Tool](/Assets/Pet%20screen%20mockup.jpg)
+![Pet Tool](/Assets/Pet%20screen%20mockup%20scaled.jpg)
 
 The app will have two major components, a task tool (Mockup 1) and a pet game (Mockup 2). The first tool shouldn't require internet and should have a very short startup time as well. The goal here is to reduce friction as much as possible. The second is to help encourage use of the first by tying pet health/happiness to successful usage/follow through on the first tool.
 
