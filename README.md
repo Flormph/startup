@@ -14,6 +14,7 @@
 
 ### 6/26/26
     -Added scaled versions of mockups to README.md
+    -Registered the DNS gedidone.click and secured the website
 
 ### Elevator pitch
 
@@ -67,9 +68,9 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **Rented EC2 server** - I did not complete this part of the deliverable.
-- [ ] **Leased domain name** - I did not complete this part of the deliverable.
-- [ ] **Server accessible** from my domain: [https://yourdomainnamehere.click](https://yourdomainnamehere.click) - I did not complete this part of the deliverable.
+- [X] **Rented EC2 server** - I did complete this part of the deliverable. I rented a T3 Nano server
+- [X] **Leased domain name** - I did complete this part of the deliverable. The domain name I chose was gedidone.click
+- [X] **Server accessible** from my domain: [https://gedidone.click](https://gedidone.click) - I did complete this part of the deliverable by renting, registering, and securing the website.
 
 ## 🚀 HTML deliverable
 
