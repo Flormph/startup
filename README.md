@@ -16,6 +16,9 @@
     -Added scaled versions of mockups to README.md
     -Registered the DNS gedidone.click and secured the website
 
+### 6/29/26
+    -Added HTML files: index.html, about.html, pet-meadow.html, sticky-note.html
+
 ### Elevator pitch
 
 People with ADHD struggle with completing small tasks. When a task crosses their mind and they don't complete it immediately, they are unlikely to remember and complete it later. Various individuals develope niche strategies to combat this, such as placing sticky notes in visible areas. This app seeks to emulate these methods in a quick and easy to use manner. Essentially, a custom tool with a focus on low barrier of entry.
@@ -76,16 +79,16 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
-- [ ] **HTML pages** - I did not complete this part of the deliverable.
-- [ ] **Proper HTML element usage** - I did not complete this part of the deliverable.
-- [ ] **Links** - I did not complete this part of the deliverable.
-- [ ] **Text** - I did not complete this part of the deliverable.
-- [ ] **3rd party API placeholder** - I did not complete this part of the deliverable.
-- [ ] **Images** - I did not complete this part of the deliverable.
-- [ ] **Login placeholder** - I did not complete this part of the deliverable.
-- [ ] **DB data placeholder** - I did not complete this part of the deliverable.
-- [ ] **WebSocket placeholder** - I did not complete this part of the deliverable.
+- [X] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
+- [X] **HTML pages** - I created four pages (heavily inspired by the simon pages): A login page, sticky-note page, pet-meadow page, and about page.
+- [X] **Proper HTML element usage** - I avoided div soup by implementing strategies taught in class as well as by studying the simon repo.
+- [X] **Links** - I included a nav area to move around the website as well as a link to my repo.
+- [X] **Text** - The about page should fulfill this requirement nicely.
+- [X] **3rd party API placeholder** - The pet meadow will reference the weather API to determine environment weather.
+- [X] **Images** - I indluded a favicon as well as a placeholder image of the pet.
+- [X] **Login placeholder** - I slightly modified the login html from the simon repo for this.
+- [X] **DB data placeholder** - The sticky-note application fulfills this requirement.
+- [X] **WebSocket placeholder** - When the user loads the pet-meadow, the app will switch from "offline" to "online" (mainly only relevent for mobile usage) and websocket will backup the sticky note to the DB.
 
 ## 🚀 CSS deliverable
 
