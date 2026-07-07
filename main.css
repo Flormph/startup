@@ -4,23 +4,46 @@
 body {
     font-family: 'Geist Pixel', monospace;
     background-color: #f5f5dc;
+    margin: 0;
+    padding-top: 100px;
 }
 
 header {
     background-color: #f3c3e0;
-    padding: 20px;
-    text-align: center;
-    color: hsl(319, 25%, 46%);
-}
-
-nav {
-    background-color: #f3c3e0;
     padding: 10px;
     text-align: center;
-    font-weight: bold;
     color: hsl(319, 25%, 46%);
+    border-bottom: 2px solid hsl(319, 25%, 46%);
+    
 
     display: flex;
-    justify-content: center;
-    flex-direction: row;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+nav ul {
+    display: flex;
+    gap: 20px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap; /* allows wrapping on smaller screens */
+    justify-content: flex-end; /* centers the nav items */
+    width: 100%; /* ensures the nav takes full width */
+    box-sizing: border-box; /* keeps padding from pushing width past 100% */
+}
+
+nav a {
+    color: hsl(319, 25%, 46%);
+    text-decoration: none; /* optional, removes the underline */
+}
+
+nav a:visited {
+    color: hsl(319, 25%, 46%); /* prevents visited links from turning purple */
 }
