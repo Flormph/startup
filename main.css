@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist+Pixel&display=swap');
-
+@import "tailwindcss";
 
 body {
     font-family: 'Geist Pixel', monospace;
@@ -57,4 +57,3 @@ nav a:visited {
 .logo:visited {
   color: hsl(319, 25%, 46%);
 }
-
