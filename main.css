@@ -4,3 +4,23 @@
 @theme {
   --font-geist: 'Geist Pixel', monospace;
 }
+/* Selectors for deliverable */
+/* Element selector */
+hr {
+  border-color: hsl(319, 25%, 46%);
+}
+
+/* Class selector */
+.gedidone-divider {
+  border-width: 2px;
+}
+
+/* ID selector */
+#pet {
+  transition: transform 0.3s ease;
+}
+
+/* Pseudo-class selector */
+#pet:hover {
+  transform: scale(1.1);
+}
