@@ -26,41 +26,40 @@
             </nav>
         </header>
 
-        <hr />
+        <main class="p-6">
+            <h1 class="text-2xl font-bold text-[hsl(319,25%,46%)] mb-4">Sticky Note</h1>
 
-        <main>
-            <h1>Sticky Notes Application Area (WIP)</h1>
-            <table>
+            <table class="w-full border-collapse border-2 border-[hsl(319,25%,46%)]">
                 <thead>
-                    <tr>
-                        <th>Note Title</th>
-                        <th>Note Content</th>
-                        <th>Actions</th>
+                    <tr class="bg-[#f3c3e0] text-[hsl(319,25%,46%)]">
+                        <th class="border border-[hsl(319,25%,46%)] p-2 text-left">Note Title</th>
+                        <th class="border border-[hsl(319,25%,46%)] p-2 text-left">Note Content</th>
+                        <th class="border border-[hsl(319,25%,46%)] p-2 text-left">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Sample Note</td>
-                        <td>This is a sample note content.</td>
-                        <td>
-                            <button aria-label="Edit element one">Edit</button>
-                            <button aria-label="Delete element one">Delete</button>
+                    <tr class="hover:bg-[#f3c3e0]/30">
+                        <td class="border border-[hsl(319,25%,46%)] p-2">Sample Note</td>
+                        <td class="border border-[hsl(319,25%,46%)] p-2">This is a sample note.</td>
+                        <td class="border border-[hsl(319,25%,46%)] p-2 flex gap-2">
+                            <button aria-label="Edit element one" class="px-3 py-1 rounded bg-[hsl(319,25%,46%)] text-[antiquewhite] hover:bg-[hsl(319,25%,56%)]">Edit</button>
+                            <button aria-label="Delete element one" class="px-3 py-1 rounded bg-white text-[hsl(319,25%,46%)] border-2 border-[hsl(319,25%,46%)] hover:bg-[hsl(319,25%,95%)]">Delete</button>
                         </td>
                     </tr>
-                    <tr>
-                        <td>Another Note</td>
-                        <td>This is another note content.</td>
-                        <td>
-                            <button aria-label="Edit element two">Edit</button>
-                            <button aria-label="Delete element two">Delete</button>
+                    <tr class="hover:bg-[#f3c3e0]/30">
+                        <td class="border border-[hsl(319,25%,46%)] p-2">Another Note</td>
+                        <td class="border border-[hsl(319,25%,46%)] p-2">This is another note.</td>
+                        <td class="border border-[hsl(319,25%,46%)] p-2 flex gap-2">
+                            <button aria-label="Edit element two" class="px-3 py-1 rounded bg-[hsl(319,25%,46%)] text-[antiquewhite] hover:bg-[hsl(319,25%,56%)]">Edit</button>
+                            <button aria-label="Delete element two" class="px-3 py-1 rounded bg-white text-[hsl(319,25%,46%)] border-2 border-[hsl(319,25%,46%)] hover:bg-[hsl(319,25%,95%)]">Delete</button>
                         </td>
                     </tr>
-                    <tr>
-                        <td>Third Note</td>
-                        <td>This is the third note content.</td>
-                        <td>
-                            <button aria-label="Edit element three">Edit</button>
-                            <button aria-label="Delete element three">Delete</button>
+                    <tr class="hover:bg-[#f3c3e0]/30">
+                        <td class="border border-[hsl(319,25%,46%)] p-2">Third Note</td>
+                        <td class="border border-[hsl(319,25%,46%)] p-2">This is the third note.</td>
+                        <td class="border border-[hsl(319,25%,46%)] p-2 flex gap-2">
+                            <button aria-label="Edit element three" class="px-3 py-1 rounded bg-[hsl(319,25%,46%)] text-[antiquewhite] hover:bg-[hsl(319,25%,56%)]">Edit</button>
+                            <button aria-label="Delete element three" class="px-3 py-1 rounded bg-white text-[hsl(319,25%,46%)] border-2 border-[hsl(319,25%,46%)] hover:bg-[hsl(319,25%,95%)]">Delete</button>
                         </td>
                     </tr>
                 </tbody>
@@ -70,10 +69,10 @@
 
     <footer>
         <hr />
-        <span class="text-reset">Joseph Lee</span>
+        <span class="text-black opacity-75">Joseph Lee</span>
         <br />
-        <a href="https://www.github.com/Flormph/startup" title="GitHub repository">GitHub repository</a>
+        <a  href="https://www.github.com/Flormph/startup" class= "text-[hsl(319,25%,46%)] no-underline opacity-75" title="GitHub repository">GitHub repository</a>
         <br />
-        <a href="https://www.flaticon.com/free-icons/axolotl" title="axolotl icons">Axolotl icons created by Freepik - Flaticon</a>
+        <a href="https://www.flaticon.com/free-icons/axolotl" title="axolotl icons" class="text-[hsl(319,25%,46%)] no-underline opacity-75">Axolotl icons created by Freepik - Flaticon</a>
     </footer>
 </html>
