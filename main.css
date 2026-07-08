@@ -1,59 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist+Pixel&display=swap');
 @import "tailwindcss";
 
-body {
-    font-family: 'Geist Pixel', monospace;
-    background-color: antiquewhite;
-    margin: 0;
-    padding-top: 100px;
+@theme {
+  --font-geist: 'Geist Pixel', monospace;
 }
 
-header {
-    background-color: #f3c3e0;
-    padding: 10px;
-    text-align: center;
-    color: hsl(319, 25%, 46%);
-    border-bottom: 2px solid hsl(319, 25%, 46%);
-
-    display: flex;
-    gap: 30px;              /* space between logo and nav */
-    justify-content: flex-start;  /* changed from space-between */
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-nav ul {
-    display: flex;
-    gap: 3em;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    flex-wrap: wrap;
-}
-
-nav a {
-    color: hsl(319, 25%, 46%);
-    text-decoration: none; /* optional, removes the underline */
-}
-
-nav a:visited {
-    color: hsl(319, 25%, 46%); /* prevents visited links from turning purple */
-}
-
-.logo {
-  color: hsl(319, 25%, 46%);
-  background-color:antiquewhite;
-  text-decoration: none;
-  font-size: 2rem;
-  font-weight: bold;
-  padding: 5px 10px;
-  border: 2px solid hsl(319, 25%, 46%);
-}
-
-.logo:visited {
-  color: hsl(319, 25%, 46%);
-}
