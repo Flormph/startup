@@ -4,7 +4,7 @@ import './sticky-note.css';
 export function StickyNote() {
     return (
         <main className="p-6">
-            <h1 class="text-2xl font-bold text-[hsl(319,25%,46%)] mb-4">Sticky Note</h1>
+            <h1 className="text-2xl font-bold text-[hsl(319,25%,46%)] mb-4">Sticky Note</h1>
 
             <table className="w-full border-collapse border-2 border-[hsl(319,25%,46%)]">
                 <thead>
