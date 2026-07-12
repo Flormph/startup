@@ -59,9 +59,9 @@ export default function App() {
                                 className={({ isActive }) =>
                                     `no-underline ${isActive ? 'text-[hsl(319,25%,30%)] font-bold' : 'text-[hsl(319,25%,46%)]'}`
                                 }
-                                to="/about"
+                                to="/game"
                             >
-                                About
+                                Game
                             </NavLink>
                         </li>
                         <li>
@@ -69,11 +69,12 @@ export default function App() {
                                 className={({ isActive }) =>
                                     `no-underline ${isActive ? 'text-[hsl(319,25%,30%)] font-bold' : 'text-[hsl(319,25%,46%)]'}`
                                 }
-                                to="/game"
+                                to="/about"
                             >
-                                Game
+                                About
                             </NavLink>
                         </li>
+
                     </ul>
                 </nav>
             </header>
