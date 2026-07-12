@@ -30,6 +30,7 @@
 
 ### 7/11/26
     -Ported app to React
+    -An idea beyond the scope of the project was born
 
 ### Elevator pitch
 
