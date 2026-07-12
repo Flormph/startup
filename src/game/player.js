@@ -3,7 +3,7 @@ import {
     GRAVITY, MOVE_SPEED, JUMP_FORCE, COYOTE_TIME, SPRINT_JUMP_MULT,
     SPRINT_TIME, SPRINT_MULT, SPRINT_GRACE_PERIOD,
     STAND_HEIGHT, STAND_WIDTH, CROUCH_HEIGHT, CROUCH_SPEED_MULT,
-    GALLOP_WIDTH, GALLOP_HEIGHT, GALLOP_SPEED_MULT,
+    GALLOP_WIDTH, GALLOP_HEIGHT, GALLOP_SPEED_MULT, POUNCE_JUMP_MULT, POUNCE_SPEED_MULT,
 } from './constants.js';
 
 export function createPlayer() {
@@ -19,8 +19,36 @@ export function createPlayer() {
         sprintTimer: 0,
         isCrouching: false,
         isGalloping: false,
+        isPouncing: false,
         facing: 1,
     };
+}
+
+export function exitGallop(player, platforms) {
+    const heightDiff = GALLOP_HEIGHT - CROUCH_HEIGHT;
+    const widthDiff = player.width - STAND_WIDTH;
+
+    const crouchX = player.facing === -1 ? player.x + widthDiff : player.x;
+
+    const crouchHitbox = {
+        x: crouchX,
+        y: player.y + heightDiff,
+        width: STAND_WIDTH,
+        height: CROUCH_HEIGHT,
+    };
+
+    const blocked = platforms.some((p) => checkCollision(crouchHitbox, p));
+
+    if (!blocked) {
+        player.x = crouchHitbox.x;
+        player.y = crouchHitbox.y;
+        player.width = STAND_WIDTH;
+        player.height = CROUCH_HEIGHT;
+        player.isGalloping = false;
+        player.isCrouching = true;
+        return true;
+    }
+    return false;
 }
 
 export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
@@ -31,15 +59,16 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
     }
 
     const wantsToCrouch = keys['ArrowDown'] || keys['KeyS'] || keys['KeyC'];
+    const gallopTogglePressed = keysPressed['ArrowDown'] || keysPressed['KeyS'] || keysPressed['KeyC'];
     const isSprinting = player.sprintTimer >= SPRINT_TIME;
-    const wantsToGallop = wantsToCrouch && isSprinting && player.onGround;
+    let pouncedThisFrame = false;
 
-    if (wantsToGallop && !player.isGalloping) {
+    if (gallopTogglePressed && isSprinting && player.onGround && !player.isGalloping) { // Enter gallop from sprint
         const currentHeight = player.isCrouching ? CROUCH_HEIGHT : STAND_HEIGHT;
         const heightDiff = currentHeight - GALLOP_HEIGHT;
         const widthDiff = GALLOP_WIDTH - player.width;
 
-        const gallopX = player.facing === 1 ? player.x - widthDiff : player.x;
+        const gallopX = player.facing === -1 ? player.x - widthDiff : player.x; //checks which way player is facing for hitbox change
 
         const gallopHitbox = {
             x: gallopX,
@@ -58,29 +87,18 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
             player.isGalloping = true;
             player.isCrouching = false;
         }
-    } else if (!wantsToGallop && player.isGalloping) {
-        const heightDiff = GALLOP_HEIGHT - CROUCH_HEIGHT;
-        const widthDiff = player.width - STAND_WIDTH;
+    }
 
-        const crouchX = player.facing === 1 ? player.x + widthDiff : player.x;
+    const wantsToPounce = (keysPressed['Space'] || keys['ArrowUp'] || keys['KeyW']) && player.isGalloping;
 
-        const crouchHitbox = {
-            x: crouchX,
-            y: player.y + heightDiff,
-            width: STAND_WIDTH,
-            height: CROUCH_HEIGHT,
-        };
-
-        const blocked = platforms.some((p) => checkCollision(crouchHitbox, p));
-
-        if (!blocked) {
-            player.x = crouchHitbox.x;
-            player.y = crouchHitbox.y;
-            player.width = STAND_WIDTH;
-            player.height = CROUCH_HEIGHT;
-            player.isGalloping = false;
-            player.isCrouching = true;
-        }
+    if (wantsToPounce) {
+        exitGallop(player, platforms); // shrink hitbox back
+        player.vy = -JUMP_FORCE * POUNCE_JUMP_MULT; // apply pounce
+        player.vx = player.facing * MOVE_SPEED * POUNCE_SPEED_MULT; // apply horizontal velocity for pounce
+        player.onGround = false; // player is in the air after pounce
+        player.isPouncing = true;
+    } else if (player.isGalloping && !(keys['ArrowLeft'] || keys['KeyA'] || keys['ArrowRight'] || keys['KeyD'])) {
+        exitGallop(player, platforms); // shrink hitbox back if player stops moving while galloping
     }
 
     if (wantsToCrouch && !player.isCrouching && !player.isGalloping) {
@@ -108,45 +126,47 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
 
     const speedMult = player.isGalloping ? GALLOP_SPEED_MULT : player.isCrouching ? CROUCH_SPEED_MULT : 1;
 
-    if (keys['ArrowLeft'] || keys['KeyA']) {
-        if (player.isGalloping) {
-            player.vx = -MOVE_SPEED * GALLOP_SPEED_MULT;
-        } else if (player.sprintTimer < SPRINT_TIME) {
-            player.vx = -MOVE_SPEED * speedMult;
-            player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
+    if (!player.isPouncing) {
+        if (keys['ArrowLeft'] || keys['KeyA']) {
+            if (player.isGalloping) {
+                player.vx = -MOVE_SPEED * GALLOP_SPEED_MULT;
+            } else if (player.sprintTimer < SPRINT_TIME) {
+                player.vx = -MOVE_SPEED * speedMult;
+                player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
+            } else {
+                player.vx = -MOVE_SPEED * SPRINT_MULT * speedMult;
+                player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
+            }
+        } else if (keys['ArrowRight'] || keys['KeyD']) {
+            if (player.isGalloping) {
+                player.vx = MOVE_SPEED * GALLOP_SPEED_MULT;
+            } else if (player.sprintTimer < SPRINT_TIME) {
+                player.vx = MOVE_SPEED * speedMult;
+                player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
+            } else {
+                player.vx = MOVE_SPEED * SPRINT_MULT * speedMult;
+                player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
+            }
         } else {
-            player.vx = -MOVE_SPEED * SPRINT_MULT * speedMult;
-            player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
+            player.vx = 0;
+            player.sprintTimer = Math.max(0, player.sprintTimer - deltaTime);
         }
-    } else if (keys['ArrowRight'] || keys['KeyD']) {
-        if (player.isGalloping) {
-            player.vx = MOVE_SPEED * GALLOP_SPEED_MULT;
-        } else if (player.sprintTimer < SPRINT_TIME) {
-            player.vx = MOVE_SPEED * speedMult;
-            player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
-        } else {
-            player.vx = MOVE_SPEED * SPRINT_MULT * speedMult;
-            player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
-        }
-    } else {
-        player.vx = 0;
-        player.sprintTimer = Math.max(0, player.sprintTimer - deltaTime);
-    }
 
-    if (player.onGround) {
-        player.coyoteTimer = COYOTE_TIME;
-    } else {
-        player.coyoteTimer -= deltaTime;
-    }
-
-    if ((keysPressed['Space'] || keysPressed['ArrowUp'] || keysPressed['KeyW']) && player.coyoteTimer > 0 && !player.isCrouching) {
-        if (player.sprintTimer >= SPRINT_TIME) {
-            player.vy = -JUMP_FORCE * SPRINT_JUMP_MULT;
+        if (player.onGround) {
+            player.coyoteTimer = COYOTE_TIME;
         } else {
-            player.vy = -JUMP_FORCE;
+            player.coyoteTimer -= deltaTime;
         }
-        player.onGround = false;
-        player.coyoteTimer = 0;
+
+        if ((keysPressed['Space'] || keysPressed['ArrowUp'] || keysPressed['KeyW']) && player.coyoteTimer > 0 && !player.isCrouching) {
+            if (player.sprintTimer >= SPRINT_TIME) {
+                player.vy = -JUMP_FORCE * SPRINT_JUMP_MULT;
+            } else {
+                player.vy = -JUMP_FORCE;
+            }
+            player.onGround = false;
+            player.coyoteTimer = 0;
+        }
     }
 
     player.vy += GRAVITY * deltaTime;
@@ -170,6 +190,11 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
                 player.y = platform.y - player.height;
                 player.vy = 0;
                 player.onGround = true;
+                if (player.isPouncing) {
+                    player.sprintTimer = 0;
+                    player.isPouncing = false;
+                }
+
             } else if (player.vy < 0) {
                 player.y = platform.y + platform.height;
                 player.vy = 0;
