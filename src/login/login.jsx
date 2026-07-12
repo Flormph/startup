@@ -11,8 +11,8 @@ export function Login() {
     };
 
     return (
-        <main>
-            <h2>Welcome to Gedidone!</h2>
+        <main className="p-5 pb-[70px] flex flex-col items-center">
+            <h2 className="p-[2px]">Welcome to Gedidone!</h2>
             <p>Log in or create an account to get started!"</p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 p-5 items-center border-2 border-[hsl(319,25%,46%)]">                <div className="flex items-center gap-2">
