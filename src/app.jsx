@@ -25,6 +25,7 @@ export default function App() {
                     onClick={() => setNavOpen(!navOpen)}
                     className="md:hidden text-2xl px-3"
                     aria-label="Toggle navigation"
+                    aria-expanded={navOpen}
                 >
                     ☰
                 </button>
