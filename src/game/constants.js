@@ -15,3 +15,5 @@ export const CROUCH_SPEED_MULT = 0.5; // how much slower the player moves when c
 export const GALLOP_WIDTH = STAND_HEIGHT * 0.9; // width of the player character when galloping
 export const GALLOP_HEIGHT = CROUCH_HEIGHT; // height of the player character when galloping
 export const GALLOP_SPEED_MULT = 1.5; // how much faster the player moves when galloping
+export const POUNCE_JUMP_MULT = .9; // how much higher the player jumps when pouncing
+export const POUNCE_SPEED_MULT = 3.0; // how much faster the player moves when pouncing
