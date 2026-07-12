@@ -1,5 +1,4 @@
 import React from 'react';
-import './sticky-note.css';
 
 export function StickyNote() {
     return (

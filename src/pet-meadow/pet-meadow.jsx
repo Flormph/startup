@@ -1,5 +1,4 @@
 import React from 'react';
-import './pet-meadow.css';
 
 export function PetMeadow() {
     return (
