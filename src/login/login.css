@@ -1,0 +1,28 @@
+main {
+    padding: 20px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 70px;
+}
+
+h2 {
+    padding: 2px;
+}
+
+form {
+    padding: 20px;
+    border: 2px solid hsl(319, 25%, 46%);
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
