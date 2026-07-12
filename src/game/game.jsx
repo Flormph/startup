@@ -128,10 +128,14 @@ export function Game() {
             if (!match) return { x: 2, y: 2 }; // fallback if no matching entry point is found
 
             switch (entryDirection) {
-                case 'up': return { x: match.x, y: match.y + 1 };
-                case 'down': return { x: match.x, y: match.y - 1 };
-                case 'left': return { x: match.x + 1, y: match.y };
-                case 'right': return { x: match.x - 1, y: match.y };
+                case 'left':
+                    return { x: match.x + 1.1, y: player.y }; // vertical position carries over unchanged
+                case 'right':
+                    return { x: match.x - player.width - 0.1, y: player.y };
+                case 'up':
+                    return { x: player.x, y: match.y + 1.1 }; // horizontal position carries over unchanged
+                case 'down':
+                    return { x: player.x, y: match.y - player.height - 0.1 };
             }
         }
 
@@ -155,9 +159,9 @@ export function Game() {
             return insideExit;
         }
 
-        // game loop with delta time
-        let lastTime = performance.now();
+        // initialize game state variables
 
+        let lastTime = performance.now(); // game loop with delta time
         let playerRoom = [0, 0]; // player's room coordinate TODO: update when player moves between rooms
         let loadedRoom = null; // room currently loaded
         let roomData = null; // data for the current level
