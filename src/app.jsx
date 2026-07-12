@@ -6,6 +6,7 @@ import { Login } from './login/login.jsx';
 import { PetMeadow } from './pet-meadow/pet-meadow.jsx';
 import { StickyNote } from './sticky-note/sticky-note.jsx';
 import { About } from './about/about.jsx';
+import { Game } from './game/game.jsx';
 import { NotFound } from './not-found/not-found.jsx';
 
 
