@@ -1,11 +1,13 @@
 import React, { useRef, useEffect } from 'react';
+import { getRoom } from "./map.jsx"
 
 const ASPECT_RATIO = 16 / 9;
 const GRAVITY = 30; // units per second squared
-const MOVE_SPEED = 6; // units per second
-const JUMP_FORCE = 15; // units per second (initial upward velocity)
-const COLUMNS = 20; // how many units wide the visible world is
+const MOVE_SPEED = 10; // units per second
+const JUMP_FORCE = 16; // units per second (initial upward velocity)
+const COLUMNS = 30; // how many units wide the visible world is
 const COYOTE_TIME = 0.15; // seconds of grace period after leaving the ground
+const SPRINT_JUMP_MULT = 1.2; // how much higher the player jumps when sprinting
 const SPRINT_TIME = 1.5; // how many seconds until sprinting
 const SPRINT_MULT = 1.5 // how much faster sprinting is than walking
 
@@ -39,21 +41,13 @@ export function Game() {
         const player = {
             x: 2, // 2 units from left
             y: 5, // 5 units from top
-            width: .6, // 0.6 units wide
-            height: .8, // 0.8 units tall
+            width: .8, // 0.6 units wide
+            height: 1.8, // 0.8 units tall
             vx: 0,
             vy: 0,
             onGround: false,
             coyoteTimer: 0,
             sprintTimer: 0,
-        }
-
-        function getPlatforms(columns, rows) {
-            return [
-                { x: 0, y: rows - 1, width: columns, height: 1 },        // ground, 1 unit tall
-                { x: columns * 0.25, y: rows * 0.6, width: 3, height: 0.4 },
-                { x: columns * 0.55, y: rows * 0.4, width: 3, height: 0.4 },
-            ];
         }
 
         function checkCollision(rectA, rectB) {
@@ -82,19 +76,47 @@ export function Game() {
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
 
+        function parseLevel(rows, tileSize = 1) { // parse a level layout into an array of platform objects
+            const platforms = [];
+
+            rows.forEach((row, rowIndex) => {
+                row.split('').forEach((char, colIndex) => {
+                    if (char === '#') {
+                        platforms.push({ x: colIndex * tileSize, y: rowIndex * tileSize, width: tileSize, height: tileSize });
+                    }
+                });
+            });
+            return platforms;
+        }
+
         // game loop with delta time
         let lastTime = performance.now();
+
+        let playerRoom = [0, 0]; // player's room coordinate TODO: update when player moves between rooms
+        let loadedRoom = null; // room currently loaded
+        let roomData = null; // data for the current level
+        let roomLayout = null; // parsed layout of the current level
+        let enemies = []; // enemies in the current level
+        let items = []; // items in the current level
+        let music = null; // music for the current level
 
         function gameLoop(currentTime) {
             const deltaTime = (currentTime - lastTime) / 1000; // convert to seconds
             lastTime = currentTime;
 
             const unit = getUnit(canvas.width);
-            const rows = canvas.height / unit;
-            const platforms = getPlatforms(COLUMNS, rows);
 
-            update(deltaTime, platforms);
-            draw(unit, platforms);
+            if (!loadedRoom || playerRoom[0] !== loadedRoom[0] || playerRoom[1] !== loadedRoom[1]) {
+                roomData = getRoom(playerRoom);
+                roomLayout = parseLevel(roomData.layout);
+                enemies = roomData.enemies;
+                items = roomData.items;
+                music = roomData.music;
+                loadedRoom = playerRoom;
+            }
+
+            update(deltaTime, roomLayout);
+            draw(unit, roomLayout);
 
             keysPressed['Space'] = false;
             keysPressed['ArrowUp'] = false;
@@ -132,7 +154,11 @@ export function Game() {
 
             // vertical movement (no mid air jumps)
             if ((keysPressed['Space'] || keysPressed['ArrowUp'] || keysPressed['KeyW']) && player.coyoteTimer > 0) {
-                player.vy = -JUMP_FORCE;
+                if (player.sprintTimer >= SPRINT_TIME) {
+                    player.vy = -JUMP_FORCE * SPRINT_JUMP_MULT;
+                } else {
+                    player.vy = -JUMP_FORCE;
+                }
                 player.onGround = false;
                 player.coyoteTimer = 0; // prevents spam jump
             }
