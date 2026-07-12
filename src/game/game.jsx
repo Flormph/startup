@@ -1,10 +1,10 @@
 import React, { useRef, useEffect } from 'react';
 
 const ASPECT_RATIO = 16 / 9;
-const GRAVITY = 1800; // pixels per second squared
-const MOVE_SPEED = 300; // pixels per second
-const JUMP_FORCE = 600; // pixels per second (initial upward velocity)
-const GROUND_Y = 300; // temp ground level
+const GRAVITY = 30; // units per second squared
+const MOVE_SPEED = 6; // units per second
+const JUMP_FORCE = 15; // units per second (initial upward velocity)
+const COLUMNS = 20; // how many units wide the visible world is
 
 export function Game() {
     const canvasRef = useRef(null);
@@ -28,15 +28,36 @@ export function Game() {
         const resizeObserver = new ResizeObserver(resizeCanvas);
         resizeObserver.observe(container);
 
+        function getUnit(canvasWidth) {
+            return canvasWidth / COLUMNS;
+        }
+
         // player stats
         const player = {
-            x: 100,
-            y: GROUND_Y,
-            width: 32,
-            height: 32,
+            x: 2, // 2 units from left
+            y: 5, // 5 units from top
+            width: .6, // 0.6 units wide
+            height: .8, // 0.8 units tall
             vx: 0,
             vy: 0,
             onGround: false,
+        }
+
+        function getPlatforms(columns, rows) {
+            return [
+                { x: 0, y: rows - 1, width: columns, height: 1 },        // ground, 1 unit tall
+                { x: columns * 0.25, y: rows * 0.6, width: 3, height: 0.4 },
+                { x: columns * 0.55, y: rows * 0.4, width: 3, height: 0.4 },
+            ];
+        }
+
+        function checkCollision(rectA, rectB) {
+            return (
+                rectA.x < rectB.x + rectB.width &&
+                rectA.x + rectA.width > rectB.x &&
+                rectA.y < rectB.y + rectB.height &&
+                rectA.y + rectA.height > rectB.y
+            );
         }
 
         // input handling
@@ -83,34 +104,60 @@ export function Game() {
             // apply gravity
             player.vy += GRAVITY * deltaTime;
 
-            // update position
-            player.x += player.vx * deltaTime;
-            player.y += player.vy * deltaTime;
+            const unit = getUnit(canvas.width)
+            const rows = canvas.height / unit;
+            const platforms = getPlatforms(COLUMNS, rows);
 
-            // temp ground collision
-            if (player.y >= GROUND_Y) {
-                player.y = GROUND_Y;
-                player.vy = 0;
-                player.onGround = true;
+            // collision detection
+            player.x += player.vx * deltaTime;
+            for (const platform of platforms) {
+                if (checkCollision(player, platform)) {
+                    if (player.vx > 0) {
+                        // moving right, hit left side of platform
+                        player.x = platform.x - player.width;
+                    } else if (player.vx < 0) {
+                        // moving left, hit right side of platform
+                        player.x = platform.x + platform.width;
+                    }
+                }
+            }
+
+            player.onGround = false; // assume airborne
+            player.y += player.vy * deltaTime;
+            for (const platform of platforms) {
+                if (checkCollision(player, platform)) {
+                    if (player.vy > 0) {
+                        // falling
+                        player.y = platform.y - player.height;
+                        player.vy = 0;
+                        player.onGround = true;
+                    } else if (player.vy < 0) {
+                        // jumping
+                        player.y = platform.y + platform.height;
+                        player.vy = 0;
+                    }
+                }
             }
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const unit = getUnit(canvas.width);
+            const rows = canvas.height / unit;
+            const platforms = getPlatforms(COLUMNS, rows);
 
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // draw ground
-            ctx.fillStyle = '#ccc';
-            ctx.beginPath();
-            ctx.moveTo(0, GROUND_Y + player.height);
-            ctx.lineTo(canvas.width, GROUND_Y + player.height);
-            ctx.stroke();
+            // draw platforms
+            ctx.fillStyle = 'hsl(319,25%,46%)';
+            for (const platform of platforms) {
+                ctx.fillRect(platform.x * unit, platform.y * unit, platform.width * unit, platform.height * unit);
+            }
 
             // draw player
             ctx.fillStyle = 'hsl(319,25%,46%)';
-            ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.fillRect(player.x * unit, player.y * unit, player.width * unit, player.height * unit);
         }
 
         animationId = requestAnimationFrame(gameLoop); // start the loop
