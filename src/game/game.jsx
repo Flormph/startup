@@ -10,6 +10,7 @@ const COYOTE_TIME = 0.15; // seconds of grace period after leaving the ground
 const SPRINT_JUMP_MULT = 1.2; // how much higher the player jumps when sprinting
 const SPRINT_TIME = 1.5; // how many seconds until sprinting
 const SPRINT_MULT = 1.5 // how much faster sprinting is than walking
+const EXIT_CHARS = { L: 'left', R: 'right', U: 'up', D: 'down' }; // characters representing room exits in the level layout
 
 export function Game() {
     const canvasRef = useRef(null);
@@ -50,15 +51,6 @@ export function Game() {
             sprintTimer: 0,
         }
 
-        function checkCollision(rectA, rectB) {
-            return (
-                rectA.x < rectB.x + rectB.width &&
-                rectA.x + rectA.width > rectB.x &&
-                rectA.y < rectB.y + rectB.height &&
-                rectA.y + rectA.height > rectB.y
-            );
-        }
-
         // input handling
         const keys = {};
         const keysPressed = {};
@@ -72,21 +64,95 @@ export function Game() {
                 e.preventDefault();
             }
         }
+
+        // handle key up events
         function handleKeyUp(e) { keys[e.code] = false; }
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
 
-        function parseLevel(rows, tileSize = 1) { // parse a level layout into an array of platform objects
-            const platforms = [];
+
+        // helper functions
+
+        function checkCollision(rectA, rectB) { // checks if two rectangles are colliding
+            return (
+                rectA.x < rectB.x + rectB.width &&
+                rectA.x + rectA.width > rectB.x &&
+                rectA.y < rectB.y + rectB.height &&
+                rectA.y + rectA.height > rectB.y
+            );
+        }
+
+        function parseRoom(rows, tileSize = 1) { // parse a level layout into an array of room objects
+            const platforms = []; // array to store platform objects
+            const exits = []; // array to store room exits
+            const teleports = []; // array to store teleport points
 
             rows.forEach((row, rowIndex) => {
                 row.split('').forEach((char, colIndex) => {
+                    const x = colIndex * tileSize;
+                    const y = rowIndex * tileSize;
+
                     if (char === '#') {
                         platforms.push({ x: colIndex * tileSize, y: rowIndex * tileSize, width: tileSize, height: tileSize });
+                    } else if (EXIT_CHARS[char]) {
+                        exits.push({ x, y, direction: EXIT_CHARS[char], width: tileSize, height: tileSize });
+                    } else if (char >= '1' && char <= '9') {
+                        teleports.push({ x, y, width: tileSize, height: tileSize, id: char });
                     }
                 });
             });
-            return platforms;
+            return { platforms, exits, teleports };
+        }
+
+        function getAdjacentRoom(room, direction) { // gets the coordinates of the room adjacent to the given room in the specified direction
+            switch (direction) {
+                case 'up': return [room[0], room[1] - 1];
+                case 'down': return [room[0], room[1] + 1];
+                case 'left': return [room[0] - 1, room[1]];
+                case 'right': return [room[0] + 1, room[1]];
+            }
+        }
+
+        function getOppositeDirection(direction) { // gets the opposite direction of the given direction
+            switch (direction) {
+                case 'up': return 'down';
+                case 'down': return 'up';
+                case 'left': return 'right';
+                case 'right': return 'left';
+            }
+        }
+
+        function findEntryPoint(destExits, travelDirection) { // finds the entry point in the destination room based on the travel direction
+            const entryDirection = getOppositeDirection(travelDirection);
+            const match = destExits.find((e) => e.direction === entryDirection);
+            if (!match) return { x: 2, y: 2 }; // fallback if no matching entry point is found
+
+            switch (entryDirection) {
+                case 'up': return { x: match.x, y: match.y + 1 };
+                case 'down': return { x: match.x, y: match.y - 1 };
+                case 'left': return { x: match.x + 1, y: match.y };
+                case 'right': return { x: match.x - 1, y: match.y };
+            }
+        }
+
+        function checkExitTrigger(player, exit) { // checks if the player has triggered any exit in the current room
+            const centerX = player.x + player.width / 2;
+            const centerY = player.y + player.height / 2;
+
+            const insideExit =
+                centerX >= exit.x && centerX <= exit.x + exit.width &&
+                centerY >= exit.y && centerY <= exit.y + exit.height;
+
+            if (!insideExit) return false;
+
+            switch (exit.direction) {
+                case 'left': return player.vx < 0;
+                case 'right': return player.vx > 0;
+                case 'up': return player.vy < 0;
+                case 'down': return player.vy > 0;
+                default: return false;
+            }
+            return insideExit;
         }
 
         // game loop with delta time
@@ -96,6 +162,8 @@ export function Game() {
         let loadedRoom = null; // room currently loaded
         let roomData = null; // data for the current level
         let roomLayout = null; // parsed layout of the current level
+        let roomExits = null; // exits in the current room
+        let roomTeleports = null; // teleport points in the current room
         let enemies = []; // enemies in the current level
         let items = []; // items in the current level
         let music = null; // music for the current level
@@ -108,15 +176,15 @@ export function Game() {
 
             if (!loadedRoom || playerRoom[0] !== loadedRoom[0] || playerRoom[1] !== loadedRoom[1]) {
                 roomData = getRoom(playerRoom);
-                roomLayout = parseLevel(roomData.layout);
+                ({ platforms: roomLayout, exits: roomExits, teleports: roomTeleports } = parseRoom(roomData.layout));
                 enemies = roomData.enemies;
                 items = roomData.items;
                 music = roomData.music;
                 loadedRoom = playerRoom;
             }
 
-            update(deltaTime, roomLayout);
-            draw(unit, roomLayout);
+            update(deltaTime, { platforms: roomLayout, exits: roomExits, teleports: roomTeleports });
+            draw(unit, { platforms: roomLayout, exits: roomExits, teleports: roomTeleports });
 
             keysPressed['Space'] = false;
             keysPressed['ArrowUp'] = false;
@@ -125,7 +193,7 @@ export function Game() {
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        function update(deltaTime, platforms) {
+        function update(deltaTime, { platforms, exits, teleports }) {
             // horizontal movement
             if (keys['ArrowLeft'] || keys['KeyA']) {
                 if (player.sprintTimer < SPRINT_TIME) {
@@ -196,9 +264,47 @@ export function Game() {
                     }
                 }
             }
+
+            // exit detection
+            for (const exit of exits) {
+                if (checkExitTrigger(player, exit)) {
+                    const override = roomData.exits?.[exit.direction]?.toRoom; // check if there's an override for the exit's destination room
+                    const destCoord = override ?? getAdjacentRoom(playerRoom, exit.direction); // if no override, go to adjacent room
+                    const destRoomData = getRoom(destCoord);
+
+                    if (destRoomData) {
+                        const destParsed = parseRoom(destRoomData.layout);
+                        const spawn = findEntryPoint(destParsed.exits, exit.direction);
+                        playerRoom = destCoord; // update the current room
+                        player.x = spawn.x;
+                        player.y = spawn.y;
+                        player.vx = 0;
+                    }
+                    return;
+                }
+            }
+
+            // teleport detection
+            for (const teleport of teleports) {
+                const centerX = player.x + player.width / 2;
+                const centerY = player.y + player.height / 2;
+                const inside = centerX >= teleport.x && centerX <= teleport.x + teleport.width &&
+                    centerY >= teleport.y && centerY <= teleport.y + teleport.height;
+                if (inside) {
+                    const dest = roomData.teleports?.[teleport.id];
+                    if (dest) {
+                        playerRoom = dest.toRoom; // update the current room
+                        player.x = dest.spawnAt.x;
+                        player.y = dest.spawnAt.y;
+                        player.vx = 0;
+                        player.vy = 0;
+                    }
+                    return;
+                }
+            }
         }
 
-        function draw(unit, platforms) {
+        function draw(unit, { platforms, exits, teleports }) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
