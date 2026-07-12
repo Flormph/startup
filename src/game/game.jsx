@@ -5,6 +5,9 @@ const GRAVITY = 30; // units per second squared
 const MOVE_SPEED = 6; // units per second
 const JUMP_FORCE = 15; // units per second (initial upward velocity)
 const COLUMNS = 20; // how many units wide the visible world is
+const COYOTE_TIME = 0.15; // seconds of grace period after leaving the ground
+const SPRINT_TIME = 1.5; // how many seconds until sprinting
+const SPRINT_MULT = 1.5 // how much faster sprinting is than walking
 
 export function Game() {
     const canvasRef = useRef(null);
@@ -41,6 +44,8 @@ export function Game() {
             vx: 0,
             vy: 0,
             onGround: false,
+            coyoteTimer: 0,
+            sprintTimer: 0,
         }
 
         function getPlatforms(columns, rows) {
@@ -62,7 +67,12 @@ export function Game() {
 
         // input handling
         const keys = {};
+        const keysPressed = {};
+
         function handleKeyDown(e) {
+            if (!keys[e.code]) {
+                keysPressed[e.code] = true; // only true on first frame of key press
+            }
             keys[e.code] = true;
             if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
                 e.preventDefault();
@@ -79,34 +89,56 @@ export function Game() {
             const deltaTime = (currentTime - lastTime) / 1000; // convert to seconds
             lastTime = currentTime;
 
-            update(deltaTime);
-            draw();
+            const unit = getUnit(canvas.width);
+            const rows = canvas.height / unit;
+            const platforms = getPlatforms(COLUMNS, rows);
+
+            update(deltaTime, platforms);
+            draw(unit, platforms);
+
+            keysPressed['Space'] = false;
+            keysPressed['ArrowUp'] = false;
+            keysPressed['KeyW'] = false;
 
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        function update(deltaTime) {
+        function update(deltaTime, platforms) {
             // horizontal movement
             if (keys['ArrowLeft'] || keys['KeyA']) {
-                player.vx = -MOVE_SPEED;
+                if (player.sprintTimer < SPRINT_TIME) {
+                    player.vx = -MOVE_SPEED;
+                    player.sprintTimer += deltaTime;
+                } else {
+                    player.vx = -MOVE_SPEED * SPRINT_MULT
+                }
             } else if (keys['ArrowRight'] || keys['KeyD']) {
-                player.vx = MOVE_SPEED;
+                if (player.sprintTimer < SPRINT_TIME) {
+                    player.vx = MOVE_SPEED;
+                    player.sprintTimer += deltaTime;
+                } else {
+                    player.vx = MOVE_SPEED * SPRINT_MULT
+                }
             } else {
                 player.vx = 0;
+                player.sprintTimer = 0;
+            }
+
+            if (player.onGround) {
+                player.coyoteTimer = COYOTE_TIME;
+            } else {
+                player.coyoteTimer -= deltaTime;
             }
 
             // vertical movement (no mid air jumps)
-            if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && player.onGround) {
+            if ((keysPressed['Space'] || keysPressed['ArrowUp'] || keysPressed['KeyW']) && player.coyoteTimer > 0) {
                 player.vy = -JUMP_FORCE;
                 player.onGround = false;
+                player.coyoteTimer = 0; // prevents spam jump
             }
 
             // apply gravity
             player.vy += GRAVITY * deltaTime;
-
-            const unit = getUnit(canvas.width)
-            const rows = canvas.height / unit;
-            const platforms = getPlatforms(COLUMNS, rows);
 
             // collision detection
             player.x += player.vx * deltaTime;
@@ -140,11 +172,7 @@ export function Game() {
             }
         }
 
-        function draw() {
-            const unit = getUnit(canvas.width);
-            const rows = canvas.height / unit;
-            const platforms = getPlatforms(COLUMNS, rows);
-
+        function draw(unit, platforms) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
