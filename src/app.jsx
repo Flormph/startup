@@ -61,13 +61,15 @@ export default function App() {
                     </nav>
                 </header>
 
-                <Routes>
-                    <Route path="/" element={<Login />} />
-                    <Route path="/pet-meadow" element={<PetMeadow />} />
-                    <Route path="/sticky-note" element={<StickyNote />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="*" element={<NotFound />} />
-                </Routes>
+                <main className="flex-1">
+                    <Routes>
+                        <Route path="/" element={<Login />} />
+                        <Route path="/pet-meadow" element={<PetMeadow />} />
+                        <Route path="/sticky-note" element={<StickyNote />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="*" element={<NotFound />} />
+                    </Routes>
+                </main>
 
                 <footer className="p-6 text-center text-sm text-[hsl(319,25%,46%)]">
                     <hr className="gedidone-divider border-[hsl(319,25%,46%)] mb-4 w-screen relative left-1/2 -translate-x-1/2" />
