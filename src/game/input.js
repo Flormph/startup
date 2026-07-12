@@ -30,6 +30,9 @@ export function createInputHandler() {
         keysPressed['Space'] = false;
         keysPressed['ArrowUp'] = false;
         keysPressed['KeyW'] = false;
+        keysPressed['ArrowDown'] = false;
+        keysPressed['KeyS'] = false;
+        keysPressed['KeyC'] = false;
     }
 
     return { keys, keysPressed, attach, detach, clearFrameKeys };
