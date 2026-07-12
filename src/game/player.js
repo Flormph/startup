@@ -1,0 +1,179 @@
+import { checkCollision } from './collision.js';
+import {
+    GRAVITY, MOVE_SPEED, JUMP_FORCE, COYOTE_TIME, SPRINT_JUMP_MULT,
+    SPRINT_TIME, SPRINT_MULT, SPRINT_GRACE_PERIOD,
+    STAND_HEIGHT, STAND_WIDTH, CROUCH_HEIGHT, CROUCH_SPEED_MULT,
+    GALLOP_WIDTH, GALLOP_HEIGHT, GALLOP_SPEED_MULT,
+} from './constants.js';
+
+export function createPlayer() {
+    return {
+        x: 2,
+        y: 5,
+        width: STAND_WIDTH,
+        height: STAND_HEIGHT,
+        vx: 0,
+        vy: 0,
+        onGround: false,
+        coyoteTimer: 0,
+        sprintTimer: 0,
+        isCrouching: false,
+        isGalloping: false,
+        facing: 1,
+    };
+}
+
+export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
+    if (keys['ArrowLeft'] || keys['KeyA']) {
+        player.facing = -1;
+    } else if (keys['ArrowRight'] || keys['KeyD']) {
+        player.facing = 1;
+    }
+
+    const wantsToCrouch = keys['ArrowDown'] || keys['KeyS'] || keys['KeyC'];
+    const isSprinting = player.sprintTimer >= SPRINT_TIME;
+    const wantsToGallop = wantsToCrouch && isSprinting && player.onGround;
+
+    if (wantsToGallop && !player.isGalloping) {
+        const currentHeight = player.isCrouching ? CROUCH_HEIGHT : STAND_HEIGHT;
+        const heightDiff = currentHeight - GALLOP_HEIGHT;
+        const widthDiff = GALLOP_WIDTH - player.width;
+
+        const gallopX = player.facing === 1 ? player.x - widthDiff : player.x;
+
+        const gallopHitbox = {
+            x: gallopX,
+            y: player.y + heightDiff,
+            width: GALLOP_WIDTH,
+            height: GALLOP_HEIGHT,
+        };
+
+        const blocked = platforms.some((p) => checkCollision(gallopHitbox, p));
+
+        if (!blocked) {
+            player.x = gallopHitbox.x;
+            player.y = gallopHitbox.y;
+            player.width = GALLOP_WIDTH;
+            player.height = GALLOP_HEIGHT;
+            player.isGalloping = true;
+            player.isCrouching = false;
+        }
+    } else if (!wantsToGallop && player.isGalloping) {
+        const heightDiff = GALLOP_HEIGHT - CROUCH_HEIGHT;
+        const widthDiff = player.width - STAND_WIDTH;
+
+        const crouchX = player.facing === 1 ? player.x + widthDiff : player.x;
+
+        const crouchHitbox = {
+            x: crouchX,
+            y: player.y + heightDiff,
+            width: STAND_WIDTH,
+            height: CROUCH_HEIGHT,
+        };
+
+        const blocked = platforms.some((p) => checkCollision(crouchHitbox, p));
+
+        if (!blocked) {
+            player.x = crouchHitbox.x;
+            player.y = crouchHitbox.y;
+            player.width = STAND_WIDTH;
+            player.height = CROUCH_HEIGHT;
+            player.isGalloping = false;
+            player.isCrouching = true;
+        }
+    }
+
+    if (wantsToCrouch && !player.isCrouching && !player.isGalloping) {
+        const heightDiff = player.height - CROUCH_HEIGHT;
+        player.height = CROUCH_HEIGHT;
+        player.y += heightDiff;
+        player.isCrouching = true;
+    } else if (!wantsToCrouch && player.isCrouching) {
+        const heightDiff = STAND_HEIGHT - CROUCH_HEIGHT;
+        const standingHitbox = {
+            x: player.x,
+            y: player.y - heightDiff,
+            width: player.width,
+            height: STAND_HEIGHT,
+        };
+
+        const blocked = platforms.some((p) => checkCollision(standingHitbox, p));
+
+        if (!blocked) {
+            player.height = STAND_HEIGHT;
+            player.y -= heightDiff;
+            player.isCrouching = false;
+        }
+    }
+
+    const speedMult = player.isGalloping ? GALLOP_SPEED_MULT : player.isCrouching ? CROUCH_SPEED_MULT : 1;
+
+    if (keys['ArrowLeft'] || keys['KeyA']) {
+        if (player.isGalloping) {
+            player.vx = -MOVE_SPEED * GALLOP_SPEED_MULT;
+        } else if (player.sprintTimer < SPRINT_TIME) {
+            player.vx = -MOVE_SPEED * speedMult;
+            player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
+        } else {
+            player.vx = -MOVE_SPEED * SPRINT_MULT * speedMult;
+            player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
+        }
+    } else if (keys['ArrowRight'] || keys['KeyD']) {
+        if (player.isGalloping) {
+            player.vx = MOVE_SPEED * GALLOP_SPEED_MULT;
+        } else if (player.sprintTimer < SPRINT_TIME) {
+            player.vx = MOVE_SPEED * speedMult;
+            player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
+        } else {
+            player.vx = MOVE_SPEED * SPRINT_MULT * speedMult;
+            player.sprintTimer = Math.min(SPRINT_TIME + SPRINT_GRACE_PERIOD, player.sprintTimer + deltaTime);
+        }
+    } else {
+        player.vx = 0;
+        player.sprintTimer = Math.max(0, player.sprintTimer - deltaTime);
+    }
+
+    if (player.onGround) {
+        player.coyoteTimer = COYOTE_TIME;
+    } else {
+        player.coyoteTimer -= deltaTime;
+    }
+
+    if ((keysPressed['Space'] || keysPressed['ArrowUp'] || keysPressed['KeyW']) && player.coyoteTimer > 0 && !player.isCrouching) {
+        if (player.sprintTimer >= SPRINT_TIME) {
+            player.vy = -JUMP_FORCE * SPRINT_JUMP_MULT;
+        } else {
+            player.vy = -JUMP_FORCE;
+        }
+        player.onGround = false;
+        player.coyoteTimer = 0;
+    }
+
+    player.vy += GRAVITY * deltaTime;
+
+    player.x += player.vx * deltaTime;
+    for (const platform of platforms) {
+        if (checkCollision(player, platform)) {
+            if (player.vx > 0) {
+                player.x = platform.x - player.width;
+            } else if (player.vx < 0) {
+                player.x = platform.x + platform.width;
+            }
+        }
+    }
+
+    player.onGround = false;
+    player.y += player.vy * deltaTime;
+    for (const platform of platforms) {
+        if (checkCollision(player, platform)) {
+            if (player.vy > 0) {
+                player.y = platform.y - player.height;
+                player.vy = 0;
+                player.onGround = true;
+            } else if (player.vy < 0) {
+                player.y = platform.y + platform.height;
+                player.vy = 0;
+            }
+        }
+    }
+}

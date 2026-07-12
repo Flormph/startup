@@ -1,0 +1,17 @@
+export const ASPECT_RATIO = 16 / 9;
+export const GRAVITY = 120; // units per second squared
+export const MOVE_SPEED = 10; // units per second
+export const JUMP_FORCE = 32; // units per second (initial upward velocity)
+export const COLUMNS = 30; // how many units wide the visible world is
+export const COYOTE_TIME = 0.15; // seconds of grace period after leaving the ground
+export const SPRINT_JUMP_MULT = 1.2; // how much higher the player jumps when sprinting
+export const SPRINT_TIME = 1.5; // how many seconds until sprinting
+export const SPRINT_MULT = 1.5; // how much faster sprinting is than walking
+export const SPRINT_GRACE_PERIOD = 0.2; // additional seconds allowed for sprinting after the timer runs out
+export const STAND_HEIGHT = 1.8; // standard height of the player character
+export const STAND_WIDTH = 0.8; // standard width of the player character
+export const CROUCH_HEIGHT = 0.9; // height of the player character when crouching
+export const CROUCH_SPEED_MULT = 0.5; // how much slower the player moves when crouching
+export const GALLOP_WIDTH = STAND_HEIGHT * 0.9; // width of the player character when galloping
+export const GALLOP_HEIGHT = CROUCH_HEIGHT; // height of the player character when galloping
+export const GALLOP_SPEED_MULT = 1.5; // how much faster the player moves when galloping
