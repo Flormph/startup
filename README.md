@@ -28,6 +28,9 @@
     -Updated nav bar to be mobile friendly
     -Created meadow window
 
+### 7/11/26
+    -Ported app to React
+
 ### Elevator pitch
 
 People with ADHD struggle with completing small tasks. When a task crosses their mind and they don't complete it immediately, they are unlikely to remember and complete it later. Various individuals develope niche strategies to combat this, such as placing sticky notes in visible areas. This app seeks to emulate these methods in a quick and easy to use manner. Essentially, a custom tool with a focus on low barrier of entry.
@@ -115,10 +118,10 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
-- [ ] **Bundled using Vite** - I did not complete this part of the deliverable.
-- [ ] **Components** - I did not complete this part of the deliverable.
-- [ ] **Router** - I did not complete this part of the deliverable.
+- [X] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
+- [X] **Bundled using Vite** - I installed vite and am using it.
+- [X] **Components** - I converted my .html files to .jsx React components.
+- [X] **Router** - My website is now a single page application which now dynamically renders html... blah blah blah, I feel so pretentious writing these things.
 
 ## 🚀 React part 2: Reactivity deliverable
 
