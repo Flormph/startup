@@ -63,6 +63,16 @@ export default function App() {
                                 About
                             </NavLink>
                         </li>
+                        <li>
+                            <NavLink
+                                className={({ isActive }) =>
+                                    `no-underline ${isActive ? 'text-[hsl(319,25%,30%)] font-bold' : 'text-[hsl(319,25%,46%)]'}`
+                                }
+                                to="/game"
+                            >
+                                Game
+                            </NavLink>
+                        </li>
                     </ul>
                 </nav>
             </header>
@@ -73,6 +83,7 @@ export default function App() {
                     <Route path="/pet-meadow" element={<PetMeadow />} />
                     <Route path="/sticky-note" element={<StickyNote />} />
                     <Route path="/about" element={<About />} />
+                    <Route path="/game" element={<Game />} />
                     <Route path="*" element={<NotFound />} />
                 </Routes>
             </main>
