@@ -6,6 +6,7 @@ import { Login } from './login/login.jsx';
 import { PetMeadow } from './pet-meadow/pet-meadow.jsx';
 import { StickyNote } from './sticky-note/sticky-note.jsx';
 import { About } from './about/about.jsx';
+import { NotFound } from './not-found/not-found.jsx';
 
 
 export default function App() {
@@ -17,7 +18,7 @@ export default function App() {
     }, [location]);
 
     return (
-        <div className="font-geist bg-[antiquewhite] m-0">
+        <div className="font-geist bg-[antiquewhite] m-0 min-h-screen flex flex-col">
             <header className="bg-[#f3c3e0] p-2.5 text-center text-[hsl(319,25%,46%)] border-b-2 border-[hsl(319,25%,46%)] flex gap-[30px] justify-start items-center sticky top-0 left-0 w-full box-border z-50">
                 <NavLink className="text-[hsl(319,25%,46%)] bg-[antiquewhite] no-underline text-2xl font-bold p-2.5 py-1 border-2 border-[hsl(319,25%,46%)] hover:bg-[hsl(319,25%,46%)] hover:text-[antiquewhite]" to="/">Gedidone</NavLink>
 
