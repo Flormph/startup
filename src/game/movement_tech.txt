@@ -1,0 +1,9 @@
+List of movement abilities and their effects:
+    Move: move in that key's direction
+    Jump: applies vertical force
+    Sprint: after moving for a period of time, gain speed
+    Crouch: reduces height and speed
+    Sprint -> Crouch: Enter a galloping run on all fours at reduced height
+    Wall-Jump: Rebound off a while while in mid air (no diminishing returns)
+    Crouch-Jump: Burrow to heal?
+    
