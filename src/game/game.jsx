@@ -66,16 +66,16 @@ export function Game() {
 
         function update(deltaTime) {
             // horizontal movement
-            if (keys['ArrowLeft']) {
+            if (keys['ArrowLeft'] || keys['KeyA']) {
                 player.vx = -MOVE_SPEED;
-            } else if (keys['ArrowRight']) {
+            } else if (keys['ArrowRight'] || keys['KeyD']) {
                 player.vx = MOVE_SPEED;
             } else {
                 player.vx = 0;
             }
 
             // vertical movement (no mid air jumps)
-            if ((keys['Space'] || keys['ArrowUp']) && player.onGround) {
+            if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && player.onGround) {
                 player.vy = -JUMP_FORCE;
                 player.onGround = false;
             }
