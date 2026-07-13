@@ -3,7 +3,9 @@ import {
     GRAVITY, MOVE_SPEED, JUMP_FORCE, COYOTE_TIME, SPRINT_JUMP_MULT,
     SPRINT_TIME, SPRINT_MULT, SPRINT_GRACE_PERIOD,
     STAND_HEIGHT, STAND_WIDTH, CROUCH_HEIGHT, CROUCH_SPEED_MULT,
-    GALLOP_WIDTH, GALLOP_HEIGHT, GALLOP_SPEED_MULT, POUNCE_JUMP_MULT, POUNCE_SPEED_MULT,
+    GALLOP_WIDTH, GALLOP_HEIGHT, GALLOP_SPEED_MULT, POUNCE_JUMP_MULT,
+    POUNCE_SPEED_MULT, WALL_GRACE_PERIOD, WALL_JUMP_X_MULT, WALL_JUMP_Y_MULT,
+    WALL_SLIDE_SPEED,
 } from './constants.js';
 
 export function createPlayer() {
@@ -24,7 +26,7 @@ export function createPlayer() {
     };
 }
 
-export function exitGallop(player, platforms) {
+function exitGallop(player, platforms) {
     const heightDiff = GALLOP_HEIGHT - CROUCH_HEIGHT;
     const widthDiff = player.width - STAND_WIDTH;
 
@@ -51,12 +53,25 @@ export function exitGallop(player, platforms) {
     return false;
 }
 
+function checkWallContact(player, platforms) {
+    const probeDepth = 0.1; // how far to check for wall contact    
+    const leftCheck = { x: player.x - probeDepth, y: player.y, width: probeDepth, height: player.height };
+    const rightCheck = { x: player.x + player.width + probeDepth, y: player.y, width: probeDepth, height: player.height };
+
+    if (platforms.some((p) => checkCollision(leftCheck, p))) return -1;
+    if (platforms.some((p) => checkCollision(rightCheck, p))) return 1;
+    return 0; // No wall contact
+}
+
 export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
     if (keys['ArrowLeft'] || keys['KeyA']) {
         player.facing = -1;
     } else if (keys['ArrowRight'] || keys['KeyD']) {
         player.facing = 1;
     }
+
+
+    // GALLOP
 
     const wantsToCrouch = keys['ArrowDown'] || keys['KeyS'] || keys['KeyC'];
     const gallopTogglePressed = keysPressed['ArrowDown'] || keysPressed['KeyS'] || keysPressed['KeyC'];
@@ -89,6 +104,9 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
         }
     }
 
+
+    //POUNCE
+
     const wantsToPounce = (keysPressed['Space'] || keys['ArrowUp'] || keys['KeyW']) && player.isGalloping;
 
     if (wantsToPounce) {
@@ -100,6 +118,9 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
     } else if (player.isGalloping && !(keys['ArrowLeft'] || keys['KeyA'] || keys['ArrowRight'] || keys['KeyD'])) {
         exitGallop(player, platforms); // shrink hitbox back if player stops moving while galloping
     }
+
+
+    //CROUCH
 
     if (wantsToCrouch && !player.isCrouching && !player.isGalloping) {
         const heightDiff = player.height - CROUCH_HEIGHT;
@@ -125,6 +146,9 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
     }
 
     const speedMult = player.isGalloping ? GALLOP_SPEED_MULT : player.isCrouching ? CROUCH_SPEED_MULT : 1;
+
+
+    // BASIC MOVEMENT
 
     if (!player.isPouncing) {
         if (keys['ArrowLeft'] || keys['KeyA']) {
@@ -169,7 +193,26 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
         }
     }
 
+
+    // GRAVITY and WALL SLIDING
+
     player.vy += GRAVITY * deltaTime;
+
+    const wallSide = checkWallContact(player, platforms);
+    const pressingIntoWall =
+        (wallSide === -1 && (keys['ArrowLeft'] || keys['KeyA'])) ||
+        (wallSide === 1 && (keys['ArrowRight'] || keys['KeyD']));
+
+    player.isWallSliding = wallSide !== 0 && !player.onGround && pressingIntoWall && player.vy > 0;
+
+    if (player.isWallSliding) {
+        player.vy = Math.min(player.vy, WALL_SLIDE_SPEED); // cap fall speed while sliding
+        player.wallSide = wallSide; // store which side the wall is on for wall jump logic
+        player.sprintTimer = 0;
+    }
+
+
+    // WALL COLLISION
 
     player.x += player.vx * deltaTime;
     for (const platform of platforms) {
@@ -181,6 +224,9 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
             }
         }
     }
+
+
+    // LANDING
 
     player.onGround = false;
     player.y += player.vy * deltaTime;
