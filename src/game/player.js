@@ -4,8 +4,8 @@ import {
     SPRINT_TIME, SPRINT_MULT, SPRINT_GRACE_PERIOD,
     STAND_HEIGHT, STAND_WIDTH, CROUCH_HEIGHT, CROUCH_SPEED_MULT,
     GALLOP_WIDTH, GALLOP_HEIGHT, GALLOP_SPEED_MULT, POUNCE_JUMP_MULT,
-    POUNCE_SPEED_MULT, WALL_GRACE_PERIOD, WALL_JUMP_X_MULT, WALL_JUMP_Y_MULT,
-    WALL_SLIDE_SPEED,
+    POUNCE_SPEED_MULT, WALL_GRACE_PERIOD, WALL_JUMP_FORCE, WALL_JUMP_PUSH,
+    WALL_SLIDE_SPEED, WALL_JUMP_LOCK_TIME,
 } from './constants.js';
 
 export function createPlayer() {
@@ -18,11 +18,14 @@ export function createPlayer() {
         vy: 0,
         onGround: false,
         coyoteTimer: 0,
+        wallCoyoteTimer: 0,
         sprintTimer: 0,
+        wallJumpLockTimer: 0,
         isCrouching: false,
         isGalloping: false,
         isPouncing: false,
         facing: 1,
+        wallSide: 0,
     };
 }
 
@@ -70,13 +73,21 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
         player.facing = 1;
     }
 
+    // Decrement wall jump lock timer
+    if (player.wallJumpLockTimer > 0) {
+        player.wallJumpLockTimer = Math.max(0, player.wallJumpLockTimer - deltaTime);
+    }
+    if (player.onGround) {
+        player.coyoteTimer = COYOTE_TIME;
+    } else {
+        player.coyoteTimer -= deltaTime;
+    }
 
     // GALLOP
 
     const wantsToCrouch = keys['ArrowDown'] || keys['KeyS'] || keys['KeyC'];
     const gallopTogglePressed = keysPressed['ArrowDown'] || keysPressed['KeyS'] || keysPressed['KeyC'];
     const isSprinting = player.sprintTimer >= SPRINT_TIME;
-    let pouncedThisFrame = false;
 
     if (gallopTogglePressed && isSprinting && player.onGround && !player.isGalloping) { // Enter gallop from sprint
         const currentHeight = player.isCrouching ? CROUCH_HEIGHT : STAND_HEIGHT;
@@ -150,7 +161,7 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
 
     // BASIC MOVEMENT
 
-    if (!player.isPouncing) {
+    if (!player.isPouncing && player.wallJumpLockTimer <= 0) {
         if (keys['ArrowLeft'] || keys['KeyA']) {
             if (player.isGalloping) {
                 player.vx = -MOVE_SPEED * GALLOP_SPEED_MULT;
@@ -174,12 +185,6 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
         } else {
             player.vx = 0;
             player.sprintTimer = Math.max(0, player.sprintTimer - deltaTime);
-        }
-
-        if (player.onGround) {
-            player.coyoteTimer = COYOTE_TIME;
-        } else {
-            player.coyoteTimer -= deltaTime;
         }
 
         if ((keysPressed['Space'] || keysPressed['ArrowUp'] || keysPressed['KeyW']) && player.coyoteTimer > 0 && !player.isCrouching) {
@@ -208,7 +213,10 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
     if (player.isWallSliding) {
         player.vy = Math.min(player.vy, WALL_SLIDE_SPEED); // cap fall speed while sliding
         player.wallSide = wallSide; // store which side the wall is on for wall jump logic
+        player.wallCoyoteTimer = WALL_GRACE_PERIOD; // reset wall coyote timer when starting to wall slide
         player.sprintTimer = 0;
+    } else {
+        player.wallCoyoteTimer = Math.max(0, player.wallCoyoteTimer - deltaTime); // decrement wall coyote timer when not wall sliding
     }
 
 
@@ -223,6 +231,29 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
                 player.x = platform.x + platform.width;
             }
         }
+    }
+
+
+    // WALL JUMP
+
+    const pressingAwayFromWall =
+        (player.wallSide === -1 && (keys['ArrowRight'] || keys['KeyD'])) ||
+        (player.wallSide === 1 && (keys['ArrowLeft'] || keys['KeyA']));
+
+    const wantsWallJump =
+        (keysPressed['Space'] || keysPressed['ArrowUp'] || keysPressed['KeyW'])
+        && player.wallCoyoteTimer > 0
+        && pressingAwayFromWall;
+
+    if (wantsWallJump) {
+        player.vy = -WALL_JUMP_FORCE; // apply vertical force for wall jump
+        player.vx = -player.wallSide * WALL_JUMP_PUSH; // apply horizontal force for wall jump
+        player.facing = -player.wallSide; // face away from the wall after wall jump
+        player.isWallSliding = false; // no longer sliding on the wall after wall jump
+        player.wallCoyoteTimer = 0; // reset wall coyote timer after wall jump
+        player.onGround = false; // player is no longer on the ground after wall jump
+        player.wallJumpLockTimer = WALL_JUMP_LOCK_TIME; // lock horizontal movement after wall jump
+        player.isPouncing = false; // cancel pounce state after wall jump
     }
 
 
