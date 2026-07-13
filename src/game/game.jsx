@@ -47,7 +47,8 @@ export function Game() {
         let music = null;
 
         function gameLoop(currentTime) {
-            const deltaTime = (currentTime - lastTime) / 1000;
+            let deltaTime = (currentTime - lastTime) / 1000;
+            deltaTime = Math.min(deltaTime, 0.1); // cap deltaTime to avoid large jumps
             lastTime = currentTime;
 
             const unit = getUnit(canvas.width);
