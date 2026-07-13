@@ -34,6 +34,7 @@
 
 ### 7/12/26
     -Added 'Game' page
+    -Implemented Game world-tools, collision, movement
 
 ### Elevator pitch
 
