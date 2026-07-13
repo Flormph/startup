@@ -1,3 +1,161 @@
+// --- pose proportion configs ---
+// each value is a fraction of pw/ph (player width/height in pixels), named for what it represents
+
+const UPRIGHT_POSE = {
+    legWidthRatio: 0.15,
+    legHeightRatio: 0.25,
+    hipXRatio: 0.5,
+    hipYRatio: 0.78,
+
+    bodyWidthRatio: 0.4,
+    bodyTopRatio: 0.22,
+    bodyHeightRatio: 0.58,
+
+    armWidthRatio: 0.12,
+    armLengthRatio: 0.3,
+    shoulderXRatio: 0.5,
+    shoulderYRatio: 0.3,
+
+    headCenterXRatio: 0.35,
+    headCenterYRatio: 0.25,
+    headRadiusXRatio: 0.42,
+    headRadiusYRatio: 0.13,
+    headTiltRadians: -0.05,
+
+    gillBaseXRatio: 0.65,
+    gillBaseYRatio: 0.23,
+};
+
+const GALLOP_POSE = {
+    bodyLengthRatio: 0.7,
+    bodyThicknessRatio: 0.4,
+    bodyLeftRatio: 0.15,
+    bodyTopRatio: 0.3,
+
+    legWidthRatio: 0.08,
+    legHeightRatio: 0.35,
+    frontHipXRatio: 0.75,
+    backHipXRatio: 0.25,
+    hipYRatio: 0.7,
+
+    headCenterXRatio: 0.1,
+    headCenterYRatio: 0.38,
+    headRadiusRatio: 0.25,
+
+    gillBaseXRatio: 0.3,
+    gillBaseYRatio: 0.2,
+};
+
+// shared gill shape, reused by both poses
+const GILLS_UPRIGHT = {
+    angleDegrees: 150,
+    angleDiffDegrees: 15,
+    lengthRatio: 0.45,
+    spacingRatio: 0.07,
+    lineWidthRatio: 0.04,
+    color: 'hsl(280,40%,55%)',
+};
+
+const GILLS_GALLOP = {
+    angleDegrees: 150,
+    angleDiffDegrees: 15,
+    lengthRatio: 0.25,
+    spacingRatio: 0.07,
+    lineWidthRatio: 0.04,
+    color: 'hsl(280,40%,55%)',
+};
+
+const BODY_COLOR = 'hsl(319,25%,46%)';
+
+function drawGills(ctx, pw, ph, poseConfig, gillConfig) {
+    const gillAngle = gillConfig.angleDegrees * (Math.PI / 180);
+    const gillAngleDiff = gillConfig.angleDiffDegrees * (Math.PI / 180);
+    const gillLength = pw * gillConfig.lengthRatio;
+    const gillSpacing = ph * gillConfig.spacingRatio;
+
+    ctx.strokeStyle = gillConfig.color;
+    ctx.lineWidth = Math.max(1, pw * gillConfig.lineWidthRatio);
+
+    const baseX = pw * poseConfig.gillBaseXRatio;
+    const baseY = ph * poseConfig.gillBaseYRatio;
+
+    for (let i = -1; i <= 1; i++) {
+        const startX = baseX;
+        const startY = baseY + i * gillSpacing;
+        const angle = gillAngle + i * gillAngleDiff;
+        const endX = startX - Math.cos(angle) * gillLength;
+        const endY = startY - Math.sin(angle) * gillLength;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+    }
+}
+
+function drawUprightPose(ctx, pw, ph, swingAngle, legStanceAngle, armSwingAngle) {
+    const p = UPRIGHT_POSE;
+    ctx.fillStyle = BODY_COLOR;
+
+    const legWidth = pw * p.legWidthRatio;
+    const legHeight = ph * p.legHeightRatio;
+    const hipX = pw * p.hipXRatio;
+    const hipY = ph * p.hipYRatio;
+
+    drawLimb(ctx, hipX, hipY, legWidth, legHeight, swingAngle + legStanceAngle);
+    drawLimb(ctx, hipX, hipY, legWidth, legHeight, -swingAngle - legStanceAngle);
+
+    const bodyWidth = pw * p.bodyWidthRatio;
+    const bodyX = (pw - bodyWidth) / 2;
+    ctx.fillRect(bodyX, ph * p.bodyTopRatio, bodyWidth, ph * p.bodyHeightRatio);
+
+    const armWidth = pw * p.armWidthRatio;
+    const armLength = ph * p.armLengthRatio;
+    const shoulderX = pw * p.shoulderXRatio;
+    const shoulderY = ph * p.shoulderYRatio;
+
+    drawLimb(ctx, shoulderX, shoulderY, armWidth, armLength, -armSwingAngle);
+    drawLimb(ctx, shoulderX, shoulderY, armWidth, armLength, armSwingAngle);
+
+    drawGills(ctx, pw, ph, p, GILLS_UPRIGHT);
+
+    ctx.fillStyle = BODY_COLOR;
+    ctx.beginPath();
+    ctx.ellipse(
+        pw * p.headCenterXRatio, ph * p.headCenterYRatio,
+        pw * p.headRadiusXRatio, ph * p.headRadiusYRatio,
+        p.headTiltRadians, 0, Math.PI * 2
+    );
+    ctx.fill();
+}
+
+function drawGallopPose(ctx, pw, ph, swingAngle) {
+    const p = GALLOP_POSE;
+    ctx.fillStyle = BODY_COLOR;
+
+    const bodyLength = pw * p.bodyLengthRatio;
+    const bodyThickness = ph * p.bodyThicknessRatio;
+    ctx.fillRect(pw * p.bodyLeftRatio, ph * p.bodyTopRatio, bodyLength, bodyThickness);
+
+    const legWidth = pw * p.legWidthRatio;
+    const legHeight = ph * p.legHeightRatio;
+    const hipY = ph * p.hipYRatio;
+
+    drawLimb(ctx, pw * p.frontHipXRatio, hipY, legWidth, legHeight, swingAngle);
+    drawLimb(ctx, pw * p.backHipXRatio, hipY, legWidth, legHeight, -swingAngle);
+
+    drawGills(ctx, pw, ph, p, GILLS_GALLOP);
+
+    ctx.beginPath();
+    ctx.ellipse(
+        pw * p.headCenterXRatio, ph * p.headCenterYRatio,
+        pw * p.headRadiusRatio, ph * p.headRadiusRatio,
+        0, 0, Math.PI * 2
+    );
+    ctx.fill();
+}
+
+
 function drawLimb(ctx, pivotX, pivotY, width, length, angle) {
     ctx.save();
     ctx.translate(pivotX, pivotY);
@@ -12,81 +170,50 @@ function drawPlayer(ctx, player, unit, time) {
     const py = player.y * unit;
     const pw = player.width * unit;
     const ph = player.height * unit;
-    const facing = player.facing;
 
     ctx.save();
     ctx.translate(px + pw / 2, py + ph / 2);
-    ctx.scale(-facing, 1);
+    ctx.scale(-player.facing, 1);
     ctx.translate(-pw / 2, -ph / 2);
 
-    // legs — swing forward/back along X, opposite phase, only while moving
     const isMoving = Math.abs(player.vx) > 0.1;
-    const swingAngle = isMoving ? Math.sin(time * 12) * 0.5 : 0; // ~28° max swing, in radians
-    ctx.fillStyle = 'hsl(319,25%,46%)';
 
 
-    //  legs - hinge from hips
+    // pose parameters
 
-    const legWidth = pw * 0.15;
-    const legHeight = ph * 0.25;
-    const hipX = pw * 0.5;
-    const hipY = ph * 0.78;
+    let legSwingSpeed = 12;
+    let legSwingMax = 0.5;
+    let armSwingMax = 0.5;
+    let legStanceAngle = 0; // default angle for legs when standing still
 
-    drawLimb(ctx, hipX, hipY, legWidth, legHeight, swingAngle);
-    drawLimb(ctx, hipX, hipY, legWidth, legHeight, -swingAngle);
-
-
-    // body — narrower than the full hitbox width
-    const bodyWidth = pw * 0.4;
-    const bodyX = (pw - bodyWidth) / 2;
-    ctx.fillRect(bodyX, ph * 0.22, bodyWidth, ph * 0.58);
-
-
-    // arms — swing from shoulders, opposite phase from legs
-    const armWidth = pw * 0.12;
-    const armLength = ph * 0.3;
-    const shoulderX = pw * 0.5;
-    const shoulderY = ph * 0.3;
-
-    drawLimb(ctx, shoulderX, shoulderY, armWidth, armLength, -swingAngle);
-    drawLimb(ctx, shoulderX, shoulderY, armWidth, armLength, swingAngle);
-
-
-    // gills — a few angled strokes near the head/neck, both sides
-    const gillAngle = 150 * (Math.PI / 180);
-    const gillLength = pw * .45;
-    const gillSpacing = ph * 0.07; // interval between gills
-    const gillAngleDiff = 15 * (Math.PI / 180); // difference in angle between consecutive gills
-
-    ctx.strokeStyle = 'hsl(280,40%,55%)';
-    ctx.lineWidth = Math.max(1, pw * 0.04);
-
-    const gillBaseX = pw * 0.65;
-    const gillBaseY = ph * 0.23;
-
-    for (let i = -1; i <= 1; i++) {
-        const startX = gillBaseX;
-        const startY = gillBaseY + i * gillSpacing; // stack three gills vertically at the head/neck
-        const endX = startX - Math.cos(gillAngle + i * gillAngleDiff) * gillLength; // swept backward
-        const endY = startY - Math.sin(gillAngle + i * gillAngleDiff) * gillLength; // and upward
-
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
+    if (player.isGalloping) {
+        legSwingSpeed = 20;
+        legSwingMax = 0.9;
+        armSwingMax = 0.2;
+    } else if (player.isCrouching) {
+        legSwingSpeed = 8;
+        legSwingMax = 0.25;
     }
 
+    if (!player.onGround) {
+        legStanceAngle = 0.3; // legs slightly bent when in the air
+        armSwingMax = 0.1;
+    }
 
-    // head — angled ellipsoid
-    ctx.fillStyle = 'hsl(319,25%,46%)';
-    ctx.beginPath();
-    ctx.ellipse(
-        pw * 0.35, ph * 0.25,      // center
-        pw * 0.42, ph * 0.13,     // radiusX, radiusY
-        -0.05,                     // rotation, in radians — tilts the ellipse
-        0, Math.PI * 2
-    );
-    ctx.fill();
+    const swingAngle = isMoving && player.onGround
+        ? Math.sin(time * legSwingSpeed) * legSwingMax
+        : 0;
+    const armSwingAngle = isMoving && player.onGround
+        ? Math.sin(time * legSwingSpeed + Math.PI) * armSwingMax
+        : 0;
+
+
+    // draw poses
+    if (player.isGalloping) {
+        drawGallopPose(ctx, pw, ph, swingAngle);
+    } else {
+        drawUprightPose(ctx, pw, ph, swingAngle, legStanceAngle, armSwingAngle);
+    }
 
     ctx.restore();
 
