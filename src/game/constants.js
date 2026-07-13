@@ -17,3 +17,7 @@ export const GALLOP_HEIGHT = CROUCH_HEIGHT; // height of the player character wh
 export const GALLOP_SPEED_MULT = 1.5; // how much faster the player moves when galloping
 export const POUNCE_JUMP_MULT = .9; // how much higher the player jumps when pouncing
 export const POUNCE_SPEED_MULT = 3.0; // how much faster the player moves when pouncing
+export const WALL_GRACE_PERIOD = 0.2; // additional seconds allowed for wall contact after leaving the wall
+export const WALL_JUMP_X_MULT = 1.5; // horizontal multiplier applied when performing a wall jump
+export const WALL_JUMP_Y_MULT = 1.2; // vertical multiplier applied when performing a wall jump
+export const WALL_SLIDE_SPEED = 8.0; // speed at which the player slides down the wall
