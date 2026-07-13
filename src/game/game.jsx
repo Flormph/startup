@@ -100,7 +100,7 @@ export function Game() {
                 }
             }
 
-            draw(ctx, canvas, unit, player, roomLayout);
+            draw(ctx, canvas, unit, player, roomLayout, currentTime / 1000);
             clearFrameKeys();
 
             animationId = requestAnimationFrame(gameLoop);
