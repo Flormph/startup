@@ -208,7 +208,7 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
         (wallSide === -1 && (keys['ArrowLeft'] || keys['KeyA'])) ||
         (wallSide === 1 && (keys['ArrowRight'] || keys['KeyD']));
 
-    player.isWallSliding = wallSide !== 0 && !player.onGround && pressingIntoWall && player.vy > 0;
+    player.isWallSliding = wallSide !== 0 && !player.onGround && pressingIntoWall;
 
     if (player.isWallSliding) {
         player.vy = Math.min(player.vy, WALL_SLIDE_SPEED); // cap fall speed while sliding
