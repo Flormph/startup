@@ -13,6 +13,7 @@ dist-ssr
 *.local
 demovite
 reactDemo
+sprites
 
 # Editor directories and files
 .vscode/*
