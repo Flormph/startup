@@ -41,6 +41,7 @@ function createReminder({ iconId, xPct, yPct }) {
         fireAt: nextOccurence(zone.triggerTime, zone.type),
         placedAt: Date.now(),
         text: null,
+        notified: false,
     };
 }
 
@@ -130,7 +131,12 @@ function useDragSurface(zones) {
 export function StickyNote() {
     const [reminders, setReminders] = useState([]);
     const { canvasRef, iconBeingDragged, handleDragStart, handleDrag, handleDragEnd } = useDragSurface(ZONES);
+    const [now, setNow] = useState(Date.now());
 
+    useEffect(() => {
+        const id = setInterval(() => setNow(Date.now()), 30000); // every 30s — plenty for minute-level display
+        return () => clearInterval(id);
+    }, []);
 
     function setReminder(reminder) {
         setReminders((prevReminders) => [...prevReminders, reminder]);
@@ -161,6 +167,35 @@ export function StickyNote() {
         return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
     }
 
+    useEffect(() => {
+        const due = reminders.filter((r) => !r.notified && r.fireAt <= now);
+        if (due.length === 0) return;
+
+        due.forEach((reminder) => {
+            deliverAlert(reminder); // step 3 — the swappable part
+        });
+
+        setReminders((prev) =>
+            prev.map((r) =>
+                due.some((d) => d.id === r.id) ? { ...r, notified: true } : r
+            )
+        );
+    }, [now]);
+
+    function deliverAlert(reminder) {
+        const icon = ICONS.find((i) => i.iconId === reminder.iconId);
+        if (Notification.permission === 'granted') {
+            new Notification('Reminder', { body: icon?.label ?? 'Something to remember' });
+        }
+    }
+
+    function testNotification() {
+        if (Notification.permission === 'granted') {
+            deliverAlert({ iconId: null }); // Provide a dummy reminder object
+        } else {
+            alert('Notification permission not granted. Please allow notifications first.');
+        }
+    }
 
     console.log('reminders', reminders);
 
@@ -216,6 +251,24 @@ export function StickyNote() {
                     </div>
                 ))}
             </div>
+            <button
+                className="text-[hsl(319,25%,46%)] border-2 border-[hsl(319,25%,46%)] px-3 py-1 bg-[#f3c3e0] hover:text-[antiquewhite] hover:bg-[hsl(319,25%,46%)]"
+                onClick={() => {
+                    if (Notification.permission !== 'granted') {
+                        Notification.requestPermission();
+                    }
+                }}
+            >
+                Allow Alerts?
+            </button>
+            <button
+                className="text-[hsl(319,25%,46%)] border-2 border-[hsl(319,25%,46%)] px-3 py-1 bg-[#f3c3e0] hover:text-[antiquewhite] hover:bg-[hsl(319,25%,46%)]"
+                onClick={() => {
+                    testNotification();
+                }}
+            >
+                test notification
+            </button>
         </div>
     );
 }
