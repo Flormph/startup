@@ -157,7 +157,22 @@ export function StickyNote() {
     return (
         <div className="w-full max-w-3xl mx-auto p-4 flex flex-col gap-4 items-center">
             <div ref={canvasRef} className="relative w-full h-96 border-2 border-[hsl(319,25%,46%)] bg-[hsl(47,100%,81.6%)]"            >
-                {/* placed reminder icons will render here, position: absolute */}
+                {reminders.map((reminder) => {
+                    const icon = ICONS.find((i) => i.iconId === reminder.iconId);
+                    return (
+                        <div
+                            key={reminder.id}
+                            className="absolute text-2xl -translate-x-1/2 -translate-y-1/2"
+                            style={{
+                                left: `${reminder.xPct * 100}%`,
+                                top: `${reminder.yPct * 100}%`,
+                            }}
+                            titel={icon?.label}
+                        >
+                            {icon?.emoji}
+                        </div>
+                    )
+                })}
             </div>
             <div className="relative w-full h-16 border-2 border-[hsl(319,25%,46%)] bg-white flex flex-row items-center gap-3 px-3 overflow-x-auto">
                 {ICONS.map((icon) => (
