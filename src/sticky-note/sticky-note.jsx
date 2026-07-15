@@ -13,7 +13,7 @@ const ZONES = [
 const ICONS = [
     { iconId: 'email', emoji: '📧', label: 'Email' },
     { iconId: 'call', emoji: '📞', label: 'Call' },
-    { iconId: 'laundry', emoji: '🧺', label: 'Laundry' },
+    { iconId: 'laundry', emoji: '👕', label: 'Laundry' },
     { iconId: 'doctor', emoji: '👩‍⚕️', label: 'Doctor' },
     { iconId: 'shopping', emoji: '🛒', label: 'Shopping' },
     { iconId: 'homework', emoji: '📚', label: 'Homework' },
@@ -151,25 +151,55 @@ export function StickyNote() {
         };
     }, [iconBeingDragged]);
 
+    function formatCountdown(msLeft) {
+        if (msLeft <= 0) return 'Now';
+
+        const totalMinutes = Math.floor(msLeft / 60000);   // ms → whole minutes
+        const hours = Math.floor(totalMinutes / 60);         // whole hours
+        const minutes = totalMinutes % 60;                   // minutes left after those hours
+
+        return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+    }
+
 
     console.log('reminders', reminders);
 
     return (
         <div className="w-full max-w-3xl mx-auto p-4 flex flex-col gap-4 items-center">
-            <div ref={canvasRef} className="relative w-full h-96 border-2 border-[hsl(319,25%,46%)] bg-[hsl(47,100%,81.6%)]"            >
+            <div ref={canvasRef} className="relative w-full h-96 border-2 border-[hsl(319,25%,46%)] bg-[hsl(47,100%,81.6%)]">
+                {ZONES.map((zone) => (
+                    <div
+                        key={zone.zoneId}
+                        className="absolute border-2 border-dashed border-[hsl(319,25%,46%)]"
+                        style={{
+                            left: `${zone.x0 * 100}%`,
+                            top: `${zone.y0 * 100}%`,
+                            width: `${(zone.x1 - zone.x0) * 100}%`,
+                            height: `${(zone.y1 - zone.y0) * 100}%`,
+                        }}
+                        title={`${zone.label} (${zone.triggerTime})`}
+                    >
+                        {zone.label}
+                    </div>
+                ))}
                 {reminders.map((reminder) => {
                     const icon = ICONS.find((i) => i.iconId === reminder.iconId);
                     return (
                         <div
                             key={reminder.id}
-                            className="absolute text-2xl -translate-x-1/2 -translate-y-1/2"
+                            className="absolute text-2xl -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center"
                             style={{
                                 left: `${reminder.xPct * 100}%`,
                                 top: `${reminder.yPct * 100}%`,
                             }}
-                            titel={icon?.label}
+                            title={icon?.label}
                         >
-                            {icon?.emoji}
+                            <div>
+                                {icon?.emoji}
+                            </div>
+                            <div className="text-xs text-[hsl(319,25%,46%)]" style={{ fontSize: '0.75rem' }}>
+                                {reminder.fireAt ? formatCountdown(new Date(reminder.fireAt).getTime() - Date.now()) : 'No fire time'}
+                            </div>
                         </div>
                     )
                 })}
