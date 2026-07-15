@@ -151,6 +151,9 @@ export function StickyNote() {
         };
     }, [iconBeingDragged]);
 
+
+    console.log('reminders', reminders);
+
     return (
         <div className="w-full max-w-3xl mx-auto p-4 flex flex-col gap-4 items-center">
             <div ref={canvasRef} className="relative w-full h-96 border-2 border-[hsl(319,25%,46%)] bg-[hsl(47,100%,81.6%)]"            >
