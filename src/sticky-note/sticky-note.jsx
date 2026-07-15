@@ -1,25 +1,45 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 
 const ZONES = [
-    { id: 'morning', label: 'Morning', x0: 0, x1: 0.5, y0: 0, y1: 0.33, triggerTime: '09:00', type: 'time', zoneId: 1 },
-    { id: 'afternoon', label: 'Afternoon', x0: 0, x1: 0.5, y0: 0.33, y1: 0.66, triggerTime: '13:00', type: 'time', zoneId: 2 },
-    { id: 'evening', label: 'Evening', x0: 0, x1: 0.5, y0: 0.66, y1: 1, triggerTime: '18:00', type: 'time', zoneId: 3 },
-    { id: '8hours', label: '8 Hours', x0: .5, x1: 1, y0: 0, y1: .33, triggerTime: '8hr', type: 'duration', zoneId: 4 },
-    { id: '16hours', label: '16 Hours', x0: .5, x1: 1, y0: .33, y1: .66, triggerTime: '16hr', type: 'duration', zoneId: 5 },
-    { id: '1day', label: '1 Day', x0: .5, x1: 1, y0: .66, y1: 1, triggerTime: '24hr', type: 'duration', zoneId: 6 },
+    { zoneId: 'morning', label: 'Morning', x0: 0, x1: 0.5, y0: 0, y1: 0.33, triggerTime: '09:00', type: 'time' },
+    { zoneId: 'afternoon', label: 'Afternoon', x0: 0, x1: 0.5, y0: 0.33, y1: 0.66, triggerTime: '13:00', type: 'time' },
+    { zoneId: 'evening', label: 'Evening', x0: 0, x1: 0.5, y0: 0.66, y1: 1, triggerTime: '18:00', type: 'time' },
+    { zoneId: '8hours', label: '8 Hours', x0: .5, x1: 1, y0: 0, y1: .33, triggerTime: '8hr', type: 'duration' },
+    { zoneId: '16hours', label: '16 Hours', x0: .5, x1: 1, y0: .33, y1: .66, triggerTime: '16hr', type: 'duration' },
+    { zoneId: '1day', label: '1 Day', x0: .5, x1: 1, y0: .66, y1: 1, triggerTime: '24hr', type: 'duration' },
 ]
 
-function createReminder({ iconId, xPct, yPct, zoneId }) {
+const ICONS = [
+    { iconId: 'email', emoji: '📧', label: 'Email' },
+    { iconId: 'call', emoji: '📞', label: 'Call' },
+    { iconId: 'laundry', emoji: '🧺', label: 'Laundry' },
+    { iconId: 'doctor', emoji: '👩‍⚕️', label: 'Doctor' },
+    { iconId: 'shopping', emoji: '🛒', label: 'Shopping' },
+    { iconId: 'homework', emoji: '📚', label: 'Homework' },
+    { iconId: 'family', emoji: '👨‍👩‍👧‍👦', label: 'Family' },
+    { iconId: 'documents', emoji: '📄', label: 'Documents' },
+];
+
+function getZoneIdFromPosition(xPct, yPct) {
+    const zone = ZONES.find((z) => xPct >= z.x0 && xPct <= z.x1 && yPct >= z.y0 && yPct <= z.y1);
+    return zone ? zone.zoneId : null;
+}
+
+function createReminder({ iconId, xPct, yPct }) {
+    const zoneId = getZoneIdFromPosition(xPct, yPct);
+    if (!zoneId) {
+        throw new Error('Icon placed outside of defined zones');
+    }
     const zone = ZONES.find((z) => z.zoneId === zoneId);
     return {
         id: crypto.randomUUID(),
-        iconId,
+        zoneId,
+        iconId: iconId,
         xPct,
         yPct,
-        zoneId,
         fireAt: nextOccurence(zone.triggerTime, zone.type),
-        placedAt: new Date(),
+        placedAt: Date.now(),
         text: null,
     };
 }
@@ -41,23 +61,112 @@ function nextOccurence(triggerTime, type) {
     return fireAt.getTime();
 }
 
-export function StickyNote() {
-    const surfaceRef = useRef(null);
-    const [reminders, setReminders] = useState([]);
+function useDragSurface(zones) {
+    const ghostRef = useRef(null);
+    const canvasRef = useRef(null);
+    const [iconBeingDragged, setIconBeingDragged] = useState(null);
 
+    function createGhost(icon, pointerEvent) {
+        const ghost = document.createElement('div');
+        ghost.textContent = icon.emoji;
+        ghost.style.cssText = `
+        position: fixed;
+        pointer-events: none;
+        z-index: 1000;
+        font-size: 2rem;
+        transform: translate(-50%, -50%);
+        left: ${pointerEvent.clientX}px;
+        top: ${pointerEvent.clientY}px;
+    `;
+        document.body.appendChild(ghost);
+        ghostRef.current = ghost;
+    }
+
+    function moveGhost(pointerEvent) {
+        if (!ghostRef.current) return;
+        ghostRef.current.style.left = `${pointerEvent.clientX}px`;
+        ghostRef.current.style.top = `${pointerEvent.clientY}px`;
+    }
+
+    function removeGhost() {
+        ghostRef.current?.remove();
+        ghostRef.current = null;
+    }
+
+    function handleDragStart(iconId, pointerEvent) {
+        setIconBeingDragged(iconId);
+        const icon = ICONS.find((i) => i.iconId === iconId);
+        if (icon) {
+            createGhost(icon, pointerEvent);
+        }
+    }
+
+    function handleDrag(iconId, pointerEvent) {
+        moveGhost(pointerEvent);
+    }
+
+    function handleDragEnd(iconId, pointerEvent, onReminderCreated) {
+        removeGhost();
+        setIconBeingDragged(null);
+        if (!canvasRef.current) return;
+
+        const rect = canvasRef.current.getBoundingClientRect();
+        const inBounds =
+            pointerEvent.clientX >= rect.left && pointerEvent.clientX <= rect.right &&
+            pointerEvent.clientY >= rect.top && pointerEvent.clientY <= rect.bottom;
+        if (!inBounds) return; // outside of note, don't compute
+
+        const xPct = (pointerEvent.clientX - rect.left) / rect.width;
+        const yPct = (pointerEvent.clientY - rect.top) / rect.height;
+        if (!getZoneIdFromPosition(xPct, yPct)) return; // outside of defined zones
+
+        return onReminderCreated(createReminder({ iconId, xPct, yPct }));
+    }
+
+    return { canvasRef, iconBeingDragged, handleDragStart, handleDrag, handleDragEnd };
+
+}
+
+export function StickyNote() {
+    const [reminders, setReminders] = useState([]);
+    const { canvasRef, iconBeingDragged, handleDragStart, handleDrag, handleDragEnd } = useDragSurface(ZONES);
 
 
     function setReminder(reminder) {
         setReminders((prevReminders) => [...prevReminders, reminder]);
     }
 
+    useEffect(() => {
+        if (!iconBeingDragged) return; // nothing being dragged
+
+        function onMove(e) { handleDrag(iconBeingDragged, e); }
+        function onUp(e) { handleDragEnd(iconBeingDragged, e, setReminder); }
+
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+
+        return () => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+        };
+    }, [iconBeingDragged]);
+
     return (
         <div className="w-full max-w-3xl mx-auto p-4 flex flex-col gap-4 items-center">
-            <div ref={surfaceRef} className="relative w-full h-96 border-2 border-[hsl(319,25%,46%)] bg-[hsl(47,100%,81.6%)]">
+            <div ref={canvasRef} className="relative w-full h-96 border-2 border-[hsl(319,25%,46%)] bg-[hsl(47,100%,81.6%)]"            >
                 {/* placed reminder icons will render here, position: absolute */}
             </div>
-            <div className="relative w-full h-16 border-2 border-[hsl(319,25%,46%)] bg-white flex flex-row items-center justify-center">
-                <div>Icons will slide here</div>
+            <div className="relative w-full h-16 border-2 border-[hsl(319,25%,46%)] bg-white flex flex-row items-center gap-3 px-3 overflow-x-auto">
+                {ICONS.map((icon) => (
+                    <div
+                        key={icon.iconId}
+                        onPointerDown={(e) => handleDragStart(icon.iconId, e)}
+                        className={`text-2xl select-none cursor-grab shrink-0 ${iconBeingDragged === icon.iconId ? 'opacity-50' : ''
+                            }`}
+                        title={icon.label}>
+                        {icon.emoji}
+                    </div>
+                ))}
             </div>
         </div>
     );
