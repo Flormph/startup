@@ -132,6 +132,8 @@ export function StickyNote() {
     const [reminders, setReminders] = useState([]);
     const { canvasRef, iconBeingDragged, handleDragStart, handleDrag, handleDragEnd } = useDragSurface(ZONES);
     const [now, setNow] = useState(Date.now());
+    const [editingId, setEditingId] = useState(null);
+
 
     useEffect(() => {
         const id = setInterval(() => setNow(Date.now()), 30000); // every 30s — plenty for minute-level display
@@ -229,12 +231,46 @@ export function StickyNote() {
                             }}
                             title={icon?.label}
                         >
-                            <div>
+                            <div className="group flex flex-col items-center hover:bg-[hsl(319,25%,46%)] hover:text-[antiquewhite] rounded px-1 py-0.5">
                                 {icon?.emoji}
+                                {editingId === reminder.id ? (
+                                    <input
+                                        autoFocus
+                                        defaultValue={reminder.text || ''}
+                                        className="text-xs text-[antiquewhite] w-20 border hover:border-[antiquewhite] rounded px-1"
+                                        onBlur={(e) => {
+                                            const newText = e.target.value;
+                                            setReminders((prev) =>
+                                                prev.map((r) => (r.id === reminder.id ? { ...r, text: newText } : r))
+                                            );
+                                            setEditingId(null);
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') e.target.blur(); // triggers the onBlur save above
+                                            if (e.key === 'Escape') setEditingId(null); // cancel, no save
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="text-xs text-[hsl(319,25%,46%)] w-20 hover:border-[antiquewhite] px-1 group-hover:text-[antiquewhite] text-center">
+                                        {reminder.text || ''}
+                                    </div>
+                                )}
+                                <div className="group-hover:opacity-100 text-xs text-[hsl(319,25%,46%)] opacity-0 group-hover:text-[antiquewhite]">
+                                    {reminder.fireAt ? formatCountdown(new Date(reminder.fireAt).getTime() - Date.now()) : 'No fire time'}
+                                </div>
+                                <button className="text-xs group-hover:opacity-100 text-2xs text-[antiquewhite] opacity-0 hover:bg-[#f3c3e0] hover:text-[hsl(319,25%,46%)] rounded" onClick={() => {
+                                    setReminders((prev) => prev.filter((r) => r.id !== reminder.id));
+                                }}>
+                                    remove
+                                </button>
+                                <button className="text-xs group-hover:opacity-100 text-2xs text-[antiquewhite] opacity-0 hover:bg-[#f3c3e0] hover:text-[hsl(319,25%,46%)] rounded" onClick={() => {
+                                    setEditingId(reminder.id);
+                                }}>
+                                    edit
+                                </button>
                             </div>
-                            <div className="text-xs text-[hsl(319,25%,46%)]" style={{ fontSize: '0.75rem' }}>
-                                {reminder.fireAt ? formatCountdown(new Date(reminder.fireAt).getTime() - Date.now()) : 'No fire time'}
-                            </div>
+
+
                         </div>
                     )
                 })}
@@ -257,6 +293,9 @@ export function StickyNote() {
                     if (Notification.permission !== 'granted') {
                         Notification.requestPermission();
                     }
+                    if (Notification.permission === 'granted') {
+                        new Notification('Notifications have been granted.');
+                    }
                 }}
             >
                 Allow Alerts?
@@ -269,6 +308,6 @@ export function StickyNote() {
             >
                 test notification
             </button>
-        </div>
+        </div >
     );
 }
