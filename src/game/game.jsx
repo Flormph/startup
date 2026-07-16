@@ -32,7 +32,7 @@ export function Game() {
             return canvasWidth / COLUMNS;
         }
 
-        loadSprites('src/game/sprites/Axolotl_Horizontal-sheet.png', 'src/game/sprites/Axolotl_Horizontal.json');
+        loadSprites('Axolotl_Horizontal-sheet.png', 'Axolotl_Horizontal.json');
 
         const player = createPlayer();
         const { keys, keysPressed, attach, detach, clearFrameKeys } = createInputHandler();
