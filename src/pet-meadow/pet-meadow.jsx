@@ -1,10 +1,60 @@
 import { useState } from 'react';
 
+
+
 export function PetMeadow() {
     const [petName, setPetName] = useState('Jimmy');
     const [weather, setWeather] = useState('Sunny');
-    const [mood, setMood] = useState('having fun');
-    const [happiness, setHappiness] = useState(100);
+    const [excitement, setExcitement] = useState(78);
+    const [happiness, setHappiness] = useState(51);
+
+    function getMoodLabel(happiness) {
+        if (happiness >= 80) return 'joyful';
+        if (happiness >= 50) return 'content';
+        if (happiness >= 25) return 'a little down';
+        return 'miserable';
+
+    }
+
+    function getWeatherLabel(weather) {
+        // Return a label based on the weather state from API
+        switch (weather) {
+            case 'Sunny':
+                return 'Sunny';
+            case 'Rainy':
+                return 'Rainy';
+            case 'Cloudy':
+                return 'Cloudy';
+            default:
+                return 'Unknown';
+        }
+    }
+
+    function getExcitementLabel(excitement) {
+        if (excitement >= 80) return 'having fun';
+        if (excitement >= 50) return 'getting bored';
+        if (excitement >= 25) return 'wallowing in monotony';
+        return 'questioning his friendship with you';
+    }
+
+    function StatBar({ label, value, max = 100, color }) {
+        const pct = Math.max(0, Math.min(100, (value / max) * 100));
+        return (
+            <div className="w-full">
+                <div className="flex justify-between text-xs text-[hsl(319,25%,46%)] mb-1">
+                    <span>{label}</span>
+                    <span>{value}/{max}</span>
+                </div>
+                <div className="w-full h-3 bg-white border border-[hsl(319,25%,46%)] rounded overflow-hidden">
+                    <div
+                        className="h-full transition-all"
+                        style={{ width: `${pct}%`, backgroundColor: color }}
+                    />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <main className="p-6 flex flex-col items-center gap-4">
             <h1 className="text-2xl font-bold text-[hsl(319,25%,46%)]">{petName}'s Meadow</h1>
@@ -18,16 +68,22 @@ export function PetMeadow() {
 
             </div>
 
-            <div className="bg-[#f3c3e0] border-2 border-[hsl(319,25%,46%)] rounded w-full max-w-2xl text-center flex flex-col items-start gap-4 justify-start px-4 py-2">
+            <div className="bg-[#f3c3e0] border-2 border-[hsl(319,25%,46%)] rounded max-w-2xl text-center flex flex-row items-start gap-4 justify-center px-4 py-2">
                 <div className="bg-[antiquewhite] border-2 border-[hsl(319,25%,46%)] px-3 py-1 rounded flex flex-col">
-                    <div className="text-[hsl(319,25%,46%)]">{petName} is {mood}</div>
+                    <div className="text-[hsl(319,25%,46%)]">{petName} is {getExcitementLabel(excitement)}</div>
+                    <div>
+                        <StatBar label="Excitement" value={excitement} color="hsl(319,25%,46%)" />
+                    </div>
+                </div>
 
+                <div className="bg-[antiquewhite] border-2 border-[hsl(319,25%,46%)] px-3 py-1 rounded flex flex-col">
+                    <div className="text-[hsl(319,25%,46%)]">{petName} is {getMoodLabel(happiness)}</div>
+                    <div>
+                        <StatBar label="Happiness" value={happiness} color="hsl(319,25%,46%)" />
+                    </div>
                 </div>
                 <div className="bg-[antiquewhite] border-2 border-[hsl(319,25%,46%)] px-3 py-1 rounded flex flex-col">
-                    <div className="text-[hsl(319,25%,46%)]">{weather} weather</div>
-                </div>
-                <div className="bg-[antiquewhite] border-2 border-[hsl(319,25%,46%)] px-3 py-1 rounded flex flex-col">
-                    <div className="text-[hsl(319,25%,46%)]">{petName} has {happiness} happiness</div>
+                    <div className="text-[hsl(319,25%,46%)]">{getWeatherLabel(weather)} weather</div>
                 </div>
             </div>
         </main>
