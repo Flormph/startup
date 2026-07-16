@@ -36,6 +36,10 @@
     -Added 'Game' page
     -Implemented Game world-tools, collision, movement
 
+### 7/15/26
+    -Added core sticky note functionality
+    -Added core pet meadow functionality
+
 ### Elevator pitch
 
 People with ADHD struggle with completing small tasks. When a task crosses their mind and they don't complete it immediately, they are unlikely to remember and complete it later. Various individuals develope niche strategies to combat this, such as placing sticky notes in visible areas. This app seeks to emulate these methods in a quick and easy to use manner. Essentially, a custom tool with a focus on low barrier of entry.
@@ -132,9 +136,9 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
-- [ ] **All functionality implemented or mocked out** - I did not complete this part of the deliverable.
-- [ ] **Hooks** - I did not complete this part of the deliverable.
+- [X] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
+- [X] **All functionality implemented or mocked out** - Sticky note now works as an automated reminder (as long as window is kept open will improve further) and pet meadow has measurable characteristics that will eventually tie in to sticky note. Game has primary movement tech and a level creator tool (see map.jsx)
+- [X] **Hooks** - Sticky note uses a hook to drag and drop and Game uses useEffect quite thoroughly to manage the gameloop (see game.jsx)
 
 ## 🚀 Service deliverable
 
