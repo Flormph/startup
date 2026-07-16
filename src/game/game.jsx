@@ -5,6 +5,7 @@ import { createInputHandler } from './input.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { parseRoom, getAdjacentRoom, findEntryPoint, checkExitTrigger } from './rooms.js';
 import { draw } from './draw.js';
+import { loadSprites, isSpriteReady, getSpriteSheet } from './sprites.js';
 
 export function Game() {
     const canvasRef = useRef(null);
@@ -30,6 +31,8 @@ export function Game() {
         function getUnit(canvasWidth) {
             return canvasWidth / COLUMNS;
         }
+
+        loadSprites('src/game/sprites/Axolotl_Horizontal-sheet.png', 'src/game/sprites/Axolotl_Horizontal.json');
 
         const player = createPlayer();
         const { keys, keysPressed, attach, detach, clearFrameKeys } = createInputHandler();
@@ -101,7 +104,7 @@ export function Game() {
                 }
             }
 
-            draw(ctx, canvas, unit, player, roomLayout, currentTime / 1000);
+            draw(ctx, canvas, unit, player, roomLayout, currentTime / 1000, deltaTime);
             clearFrameKeys();
 
             animationId = requestAnimationFrame(gameLoop);
