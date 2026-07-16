@@ -19,6 +19,7 @@ export function parseRoom(rows, tileSize = 1) {
             }
         });
     });
+    console.log(exits)
     return { platforms, exits, teleports };
 }
 

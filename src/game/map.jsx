@@ -8,7 +8,7 @@ const ROOM_1 = {
         "#    ###                     #",
         "#                            #",
         "#             ###            #",
-        "#                            #", // exit on the right border
+        "#                            #",
         "#     #########              #",
         "#                   #        #",
         "#                            #",
@@ -21,7 +21,7 @@ const ROOM_1 = {
     enemies: [],
     items: [],
     music: null,
-    exits: {},     // no overrides — 'right' defaults to getAdjacentRoom([0,0], 'right') = [1,0]
+    exits: {},
     teleports: {},
 };
 
@@ -35,7 +35,7 @@ const ROOM_2 = {
         "#                            #",
         "#                            #",
         "#                            #",
-        "#                            #", // matching exit on the left border, same row
+        "#                            #",
         "#                            #",
         "#                            #",
         "#                            #",
@@ -62,15 +62,67 @@ const ROOM_3 = {
         "#    #    # #    #   #   #   #",
         "#    #     #     #   #   #   #",
         "#                            #",
-        "#                            #", // matching exit on the left border, same row
+        "#                            #",
         "#    #   # # ### ###         #",
         "#    #   # # #   #           #",
         "#    # # # # ##  ##          #",
         "#    # # # # #   #           #",
-        "#     # #  # #   ###         R",
+        "L     # #  # #   ###         R",
+        "L                            R",
+        "L                            R",
+        "##############################"
+    ],
+    enemies: [],
+    items: [],
+    music: null,
+    exits: {},
+    teleports: {},
+};
+const ROOM_4 = {
+    layout: [
+        "##########################UUU#",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #", // exit on the right border
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#    ####################    #",
+        "#                            R",
         "#                            R",
         "#                            R",
         "##############################"
+    ],
+    enemies: [],
+    items: [],
+    music: null,
+    exits: {},
+    teleports: {},
+};
+const ROOM_5= {
+    layout: [
+        "##############################",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#                            #",
+        "#    ####################    #",
+        "#                            R",
+        "#                            R",
+        "#                            R",
+        "##########################DDD#"
     ],
     enemies: [],
     items: [],
@@ -83,6 +135,8 @@ const MAP = {
     "0,0": ROOM_1,
     "1,0": ROOM_2,
     "-1,0": ROOM_3,
+    "-2,0": ROOM_4,
+    "-2,1": ROOM_5,
 };
 
 export function getRoom(room) {
