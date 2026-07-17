@@ -1,4 +1,17 @@
 export const ASPECT_RATIO = 16 / 9;
+export const ANIM_VERT_IDLE = 'vertIdle';
+export const ANIM_VERT_WALK = 'vertWalk';
+export const ANIM_HORZ_IDLE = 'horzIdle';
+export const ANIM_HORZ_WALK = 'horzWalk';
+export const SPRITE_ASPECT = {
+    vert: { width: 13, height: 26 },
+    horz: { width: 32, height: 12 },
+}
+
+export const SPRITE_CROP = {
+    vert: { x: 0, y: 0, width: 13, height: 26 }, // offset + size of the sprite in the sprite sheet
+    horz: { x: 0, y: 0, width: 32, height: 12 },
+}
 export const GRAVITY = 120; // units per second squared
 export const MOVE_SPEED = 10; // units per second
 export const JUMP_FORCE = 32; // units per second (initial upward velocity)
@@ -8,13 +21,13 @@ export const SPRINT_JUMP_MULT = 1.2; // how much higher the player jumps when sp
 export const SPRINT_TIME = 1.5; // how many seconds until sprinting
 export const SPRINT_MULT = 1.5; // how much faster sprinting is than walking
 export const SPRINT_GRACE_PERIOD = 0.2; // additional seconds allowed for sprinting after the timer runs out
-export const STAND_HEIGHT = 1.8; // standard height of the player character
-export const STAND_WIDTH = .9; // standard width of the player character
-export const CROUCH_HEIGHT = 0.9; // height of the player character when crouching
-export const CROUCH_WIDTH = 1.8; // width of the player while crouching
+export const STAND_HEIGHT = SPRITE_ASPECT.vert.height / 16; // standard height of the player character
+export const STAND_WIDTH = SPRITE_ASPECT.vert.width / 16; // standard width of the player character
+export const CROUCH_HEIGHT = SPRITE_ASPECT.horz.height / 16; // height of the player character when crouching
+export const CROUCH_WIDTH = SPRITE_ASPECT.horz.width / 16; // width of the player while crouching
 export const CROUCH_SPEED_MULT = 0.5; // how much slower the player moves when crouching
-export const GALLOP_WIDTH = STAND_HEIGHT * 0.9; // width of the player character when galloping
-export const GALLOP_HEIGHT = CROUCH_HEIGHT; // height of the player character when galloping
+export const GALLOP_WIDTH = SPRITE_ASPECT.horz.width / 16; // width of the player character when galloping
+export const GALLOP_HEIGHT = SPRITE_ASPECT.horz.height / 16; // height of the player character when galloping
 export const GALLOP_SPEED_MULT = 1.5; // how much faster the player moves when galloping
 export const POUNCE_JUMP_MULT = .9; // how much higher the player jumps when pouncing
 export const POUNCE_SPEED_MULT = 3.0; // how much faster the player moves when pouncing
