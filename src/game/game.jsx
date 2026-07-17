@@ -13,6 +13,7 @@ import { SettingsMenu } from './settings-menu.jsx';
 export function Game() {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
+    const canvasWrapperRef = useRef(null);
 
     const [gameState, setGameState] = React.useState('start'); // 'start', 'playing', 'paused', 'settings', 'gameover'
     const gameStateRef = useRef(gameState); // To keep track of the current game state in the animation frame
@@ -35,6 +36,7 @@ export function Game() {
     useEffect(() => {
         const canvas = canvasRef.current;
         const container = containerRef.current;
+        const wrapper = canvasWrapperRef.current;
         const ctx = canvas.getContext('2d');
         let animationId;
 
@@ -51,6 +53,8 @@ export function Game() {
                 width = height * ASPECT_RATIO;
             }
 
+            wrapper.style.width = `${width}px`;
+            wrapper.style.height = `${height}px`;
             canvas.width = width;
             canvas.height = height;
         }
@@ -64,7 +68,7 @@ export function Game() {
         loadSprites('Axolotl_Player.png', 'Axolotl_Player.json');
 
         const player = createPlayer();
-        const { keys, keysPressed, attach, detach, clearFrameKeys } = createInputHandler();
+        const { keys, keysPressed, attach, detach, clearFrameKeys } = createInputHandler(togglePause);
         attach();
 
         let lastTime = performance.now();
@@ -154,8 +158,8 @@ export function Game() {
 
     return (
         <div ref={containerRef} className="relative w-full mx-auto p-4 flex justify-center items-center">
-            <div className="relative inline-block">
-                <canvas ref={canvasRef} className="border-2 border-[hsl(319,25%,46%)] block bg-white max-w-[95vw] max-h-[75vh]" />
+            <div ref={canvasWrapperRef} className="relative @container">
+                <canvas ref={canvasRef} className="border-2 border-[hsl(319,25%,46%)] block bg-white w-full h-full" />
 
                 {gameState === 'start' && (
                     <StartMenu
