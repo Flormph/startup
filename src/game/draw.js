@@ -1,11 +1,11 @@
 import { isSpriteReady, getAnimation, getSpriteSheet, createAnimationState, updateAnimation } from './sprites.js';
+import { ANIM_VERT_IDLE, ANIM_VERT_WALK, ANIM_HORZ_IDLE, ANIM_HORZ_WALK, SPRITE_CROP } from './constants.js';
 // --- pose proportion configs ---
 // each value is a fraction of pw/ph (player width/height in pixels), named for what it represents
 
 const animState = createAnimationState();
 
-const ANIM_IDLE = 'Idle';
-const ANIM_WALK = 'Walk';
+
 
 const UPRIGHT_POSE = {
     legWidthRatio: 0.15,
@@ -170,6 +170,31 @@ function drawLimb(ctx, pivotX, pivotY, width, length, angle) {
     ctx.restore();
 }
 
+function drawSpriteFrame(ctx, frame, pw, ph, family) {
+    const crop = SPRITE_CROP[family];
+
+    // source rectangle in the sprite sheet
+    const sx = crop.x + frame.x;
+    const sy = crop.y + frame.y;
+    const sw = crop.width;
+    const sh = crop.height;
+
+    const aspectRatio = crop.width / crop.height;
+
+    let destW, destH;
+    if (pw / ph > aspectRatio) { // wider than the sprite's aspect ratio, so limit by height
+        destH = ph;
+        destW = ph * aspectRatio;
+    } else { // taller than the sprite's aspect ratio, so limit by width
+        destW = pw;
+        destH = pw / aspectRatio;
+    }
+
+    const destX = (pw - destW) / 2; // center horizontally the sprite in the player box
+    const destY = ph - destH; // center vertically the sprite in the player box
+    ctx.drawImage(getSpriteSheet(), sx, sy, sw, sh, destX, destY, destW, destH);
+}
+
 // draw player
 function drawPlayer(ctx, player, unit, time, deltaTime) {
     const px = player.x * unit;
@@ -183,20 +208,40 @@ function drawPlayer(ctx, player, unit, time, deltaTime) {
     ctx.translate(-pw / 2, -ph / 2);
 
     const isMoving = Math.abs(player.vx) > 0.1;
-    const hasSpriteFor = !player.isGalloping && !player.isCrouching && player.onGround;
+    const hasSpriteFor = player.onGround;
 
     if (isSpriteReady() && hasSpriteFor) {
-        const animName = isMoving ? ANIM_WALK : ANIM_IDLE;
+        let animName = ANIM_VERT_IDLE; // default to idle if no other conditions match
+        switch (true) {
+            case isMoving && !player.isCrouching && !player.isGalloping:
+                animName = ANIM_VERT_WALK;
+                break;
+            case !isMoving && !player.isCrouching && !player.isGalloping:
+                animName = ANIM_VERT_IDLE;
+                break;
+            case isMoving && player.isCrouching:
+                animName = ANIM_HORZ_WALK;
+                break;
+            case !isMoving && player.isCrouching:
+                animName = ANIM_HORZ_IDLE;
+                break;
+            case player.isGalloping:
+                animName = ANIM_HORZ_WALK;
+                break;
+            default:
+                animName = ANIM_VERT_IDLE;
+        }
         updateAnimation(animState, animName, deltaTime);
 
         const frames = getAnimation(animName);
         const frame = frames && frames[animState.frameIndex] ? frames[animState.frameIndex] : null;
+        const family = player.isGalloping || player.isCrouching ? 'horz' : 'vert';
 
         if (frame) {
             ctx.save();
             ctx.scale(-1, 1);
             ctx.translate(-pw, 0);
-            ctx.drawImage(getSpriteSheet(), frame.x, frame.y, frame.w, frame.h, 0, 0, pw, ph);
+            drawSpriteFrame(ctx, frame, pw, ph, family);
             ctx.restore();
         } else {
             console.warn(`Animation frame not found for ${animName} at index ${animState.frameIndex}`, { frames });
