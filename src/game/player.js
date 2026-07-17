@@ -31,7 +31,7 @@ export function createPlayer() {
 
 function exitGallop(player, platforms) {
     const heightDiff = GALLOP_HEIGHT - CROUCH_HEIGHT;
-    const widthDiff = player.width - STAND_WIDTH;
+    const widthDiff = player.width - CROUCH_WIDTH;
 
     const crouchX = player.facing === -1 ? player.x + widthDiff : player.x;
 
@@ -47,7 +47,7 @@ function exitGallop(player, platforms) {
     if (!blocked) {
         player.x = crouchHitbox.x;
         player.y = crouchHitbox.y;
-        player.width = STAND_WIDTH;
+        player.width = CROUCH_WIDTH;
         player.height = CROUCH_HEIGHT;
         player.isGalloping = false;
         player.isCrouching = true;
@@ -89,13 +89,10 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
     const gallopTogglePressed = keysPressed['ArrowDown'] || keysPressed['KeyS'] || keysPressed['KeyC'];
     const isSprinting = player.sprintTimer >= SPRINT_TIME;
 
-    if (gallopTogglePressed && isSprinting && player.onGround && !player.isGalloping) { // Enter gallop from sprint
-        const currentHeight = player.isCrouching ? CROUCH_HEIGHT : STAND_HEIGHT;
-        const heightDiff = currentHeight - GALLOP_HEIGHT;
-        const widthDiff = GALLOP_WIDTH - player.width;
+    const gallopX = player.facing === -1 ? player.x - (GALLOP_WIDTH - player.width) : player.x;
+    const heightDiff = player.height - GALLOP_HEIGHT;
 
-        const gallopX = player.facing === -1 ? player.x - widthDiff : player.x; //checks which way player is facing for hitbox change
-
+    if ((gallopTogglePressed && isSprinting && player.onGround && !player.isGalloping) || (player.isCrouching && isSprinting && player.onGround && !player.isGalloping)) {
         const gallopHitbox = {
             x: gallopX,
             y: player.y + heightDiff,
@@ -135,14 +132,32 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
 
     if (wantsToCrouch && !player.isCrouching && !player.isGalloping) {
         const heightDiff = player.height - CROUCH_HEIGHT;
-        player.height = CROUCH_HEIGHT;
-        player.width = CROUCH_WIDTH;
-        player.y += heightDiff;
-        player.isCrouching = true;
+        const widthDiff = CROUCH_WIDTH - player.width;
+        const crouchX = player.facing === -1 ? player.x - widthDiff : player.x; //checks which way player is facing for hitbox change
+
+        const crouchHitbox = {
+            x: crouchX,
+            y: player.y + heightDiff,
+            width: CROUCH_WIDTH,
+            height: CROUCH_HEIGHT,
+        };
+
+        const blocked = platforms.some((p) => checkCollision(crouchHitbox, p));
+
+        if (!blocked) {
+            player.x = crouchHitbox.x;
+            player.y = crouchHitbox.y;
+            player.width = CROUCH_WIDTH;
+            player.height = CROUCH_HEIGHT;
+            player.isCrouching = true;
+        }
     } else if (!wantsToCrouch && player.isCrouching) {
         const heightDiff = STAND_HEIGHT - CROUCH_HEIGHT;
+        const widthDiff = STAND_WIDTH - CROUCH_WIDTH;
+        const standX = player.facing === -1 ? player.x - widthDiff : player.x; //checks which way player is facing for hitbox change
+
         const standingHitbox = {
-            x: player.x,
+            x: standX,
             y: player.y - heightDiff,
             width: STAND_WIDTH,
             height: STAND_HEIGHT,
@@ -151,9 +166,10 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
         const blocked = platforms.some((p) => checkCollision(standingHitbox, p));
 
         if (!blocked) {
-            player.height = STAND_HEIGHT;
+            player.x = standingHitbox.x;
+            player.y = standingHitbox.y;
             player.width = STAND_WIDTH;
-            player.y -= heightDiff;
+            player.height = STAND_HEIGHT;
             player.isCrouching = false;
         }
     }
