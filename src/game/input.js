@@ -3,6 +3,10 @@ export function createInputHandler() {
     const keysPressed = {};
 
     function handleKeyDown(e) {
+        if (e.code === 'Escape' || e.code === 'KeyP') {
+            onEscape?.();
+            return; // don't mark Escape or P as pressed for game actions
+        }
         if (!keys[e.code]) {
             keysPressed[e.code] = true;
         }
