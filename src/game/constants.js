@@ -3,14 +3,18 @@ export const ANIM_VERT_IDLE = 'vertIdle';
 export const ANIM_VERT_WALK = 'vertWalk';
 export const ANIM_HORZ_IDLE = 'horzIdle';
 export const ANIM_HORZ_WALK = 'horzWalk';
+export const SPRITE_OFFSET_VERT_Y = 6 // offset in pixels from the top of the sprite sheet to the top of the sprite
+export const SPRITE_OFFSET_VERT_X = 0 // offset in pixels from the left of the sprite sheet to the left of the sprite
+export const SPRITE_OFFSET_HORZ_Y = 20 // offset in pixels from the top of the sprite sheet to the top of the sprite
+export const SPRITE_OFFSET_HORZ_X = 0 // offset in pixels from the left of the sprite sheet to the left of the sprite
 export const SPRITE_ASPECT = {
     vert: { width: 13, height: 26 },
     horz: { width: 32, height: 12 },
 }
 
 export const SPRITE_CROP = {
-    vert: { x: 0, y: 0, width: 13, height: 26 }, // offset + size of the sprite in the sprite sheet
-    horz: { x: 0, y: 0, width: 32, height: 12 },
+    vert: { x: SPRITE_OFFSET_VERT_X, y: SPRITE_OFFSET_VERT_Y, width: 13, height: 26 }, // offset + size of the sprite in the sprite sheet
+    horz: { x: SPRITE_OFFSET_HORZ_X, y: SPRITE_OFFSET_HORZ_Y, width: 32, height: 12 },
 }
 export const GRAVITY = 120; // units per second squared
 export const MOVE_SPEED = 10; // units per second
