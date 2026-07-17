@@ -6,10 +6,31 @@ import { createPlayer, updatePlayer } from './player.js';
 import { parseRoom, getAdjacentRoom, findEntryPoint, checkExitTrigger } from './rooms.js';
 import { draw } from './draw.js';
 import { loadSprites, isSpriteReady, getSpriteSheet } from './sprites.js';
+import { StartMenu } from './start-menu.jsx';
+import { PauseMenu } from './pause-menu.jsx';
+import { SettingsMenu } from './settings-menu.jsx';
 
 export function Game() {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
+
+    const [gameState, setGameState] = React.useState('start'); // 'start', 'playing', 'paused', 'settings', 'gameover'
+    const gameStateRef = useRef(gameState); // To keep track of the current game state in the animation frame
+    const prevGameStateRef = useRef('playing'); // To track the previous game state for resuming
+
+    useEffect(() => {
+        gameStateRef.current = gameState;
+    }, [gameState]);
+
+    function openSettings() {
+        prevGameStateRef.current = gameStateRef.current;
+        setGameState('settings');
+    }
+
+    function togglePause() { // Toggle between 'playing' and 'paused'
+        if (gameStateRef.current === 'playing') setGameState('paused');
+        else if (gameStateRef.current === 'paused') setGameState('playing');
+    }
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -18,15 +39,22 @@ export function Game() {
         let animationId;
 
         function resizeCanvas() {
-            const width = container.clientWidth;
-            const height = width / ASPECT_RATIO;
+            const availableWidth = container.clientWidth;
+            const availableHeight = window.innerHeight - container.getBoundingClientRect().top; // Subtract the top offset of the container from the window height to get the available height
+
+            // fit within whichever dimension is the binding constraint
+            let width = availableWidth;
+            let height = width / ASPECT_RATIO;
+
+            if (height > availableHeight) {
+                height = availableHeight;
+                width = height * ASPECT_RATIO;
+            }
+
             canvas.width = width;
             canvas.height = height;
         }
-        resizeCanvas();
-
-        const resizeObserver = new ResizeObserver(resizeCanvas);
-        resizeObserver.observe(container);
+        window.addEventListener('resize', resizeCanvas);
 
         function getUnit(canvasWidth) {
             return canvasWidth / COLUMNS;
@@ -55,6 +83,7 @@ export function Game() {
             lastTime = currentTime;
 
             const unit = getUnit(canvas.width);
+            const isPlaying = gameStateRef.current === 'playing';
 
             if (!loadedRoom || playerRoom[0] !== loadedRoom[0] || playerRoom[1] !== loadedRoom[1]) {
                 roomData = getRoom(playerRoom);
@@ -65,46 +94,49 @@ export function Game() {
                 loadedRoom = playerRoom;
             }
 
-            updatePlayer(player, deltaTime, keys, keysPressed, roomLayout);
+            if (isPlaying) {
+                updatePlayer(player, deltaTime, keys, keysPressed, roomLayout);
 
-            // room transition check — lives here, not in player.js, since it's game-state, not player physics
-            for (const exit of roomExits) {
-                if (checkExitTrigger(player, exit)) {
-                    const override = roomData.exits?.[exit.direction]?.toRoom;
-                    const destCoord = override ?? getAdjacentRoom(playerRoom, exit.direction);
-                    const destRoomData = getRoom(destCoord);
 
-                    if (destRoomData) {
-                        const destParsed = parseRoom(destRoomData.layout);
-                        const spawn = findEntryPoint(destParsed.exits, exit.direction, player);
-                        playerRoom = destCoord;
-                        player.x = spawn.x;
-                        player.y = spawn.y;
-                        player.vx = 0;
+                // room transition check — lives here, not in player.js, since it's game-state, not player physics
+                for (const exit of roomExits) {
+                    if (checkExitTrigger(player, exit)) {
+                        const override = roomData.exits?.[exit.direction]?.toRoom;
+                        const destCoord = override ?? getAdjacentRoom(playerRoom, exit.direction);
+                        const destRoomData = getRoom(destCoord);
+
+                        if (destRoomData) {
+                            const destParsed = parseRoom(destRoomData.layout);
+                            const spawn = findEntryPoint(destParsed.exits, exit.direction, player);
+                            playerRoom = destCoord;
+                            player.x = spawn.x;
+                            player.y = spawn.y;
+                            player.vx = 0;
+                        }
+                        break;
                     }
-                    break;
+                }
+
+                for (const teleport of roomTeleports) {
+                    const centerX = player.x + player.width / 2;
+                    const centerY = player.y + player.height / 2;
+                    const inside = centerX >= teleport.x && centerX <= teleport.x + teleport.width &&
+                        centerY >= teleport.y && centerY <= teleport.y + teleport.height;
+                    if (inside) {
+                        const dest = roomData.teleports?.[teleport.id];
+                        if (dest) {
+                            playerRoom = dest.toRoom;
+                            player.x = dest.spawnAt.x;
+                            player.y = dest.spawnAt.y;
+                            player.vx = 0;
+                            player.vy = 0;
+                        }
+                        break;
+                    }
                 }
             }
 
-            for (const teleport of roomTeleports) {
-                const centerX = player.x + player.width / 2;
-                const centerY = player.y + player.height / 2;
-                const inside = centerX >= teleport.x && centerX <= teleport.x + teleport.width &&
-                    centerY >= teleport.y && centerY <= teleport.y + teleport.height;
-                if (inside) {
-                    const dest = roomData.teleports?.[teleport.id];
-                    if (dest) {
-                        playerRoom = dest.toRoom;
-                        player.x = dest.spawnAt.x;
-                        player.y = dest.spawnAt.y;
-                        player.vx = 0;
-                        player.vy = 0;
-                    }
-                    break;
-                }
-            }
-
-            draw(ctx, canvas, unit, player, roomLayout, currentTime / 1000, deltaTime);
+            draw(cx, canvas, unit, player, roomLayout, currentTime / 1000, deltaTime);
             clearFrameKeys();
 
             animationId = requestAnimationFrame(gameLoop);
@@ -113,15 +145,36 @@ export function Game() {
         animationId = requestAnimationFrame(gameLoop);
 
         return () => {
-            resizeObserver.disconnect();
+            window.removeEventListener('resize', resizeCanvas);
             cancelAnimationFrame(animationId);
             detach();
         };
     }, []);
 
     return (
-        <div ref={containerRef} className="w-full mx-auto max-w-5xl p-4">
-            <canvas ref={canvasRef} className="border-2 border-[hsl(319,25%,46%)] block bg-white w-full" />
+        <div ref={containerRef} className="w-full mx-auto p-4 flex justify-center items-center">
+            <canvas ref={canvasRef} className="border-2 border-[hsl(319,25%,46%)] block bg-white max-w-[95vw] max-h-[75vh]" />
+
+            {gameState === 'start' && (
+                <StartMenu
+                    onStart={() => setGameState('playing')}
+                    onSettings={() => { prevGameStateRef.current = 'start'; setGameState('settings'); }}
+                />
+            )}
+
+            {gameState === 'paused' && (
+                <PauseMenu
+                    onResume={() => setGameState('playing')}
+                    onSettings={() => { prevGameStateRef.current = 'paused'; setGameState('settings'); }}
+                    onQuit={() => setGameState('start')}
+                />
+            )}
+
+            {gameState === 'settings' && (
+                <SettingsMenu
+                    onBack={() => setGameState(prevGameStateRef.current)}
+                />
+            )}
         </div>
     );
 }
