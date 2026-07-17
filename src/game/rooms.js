@@ -25,7 +25,7 @@ export function parseRoom(rows, tileSize = 1) {
 
 export function getAdjacentRoom(room, direction) {
     switch (direction) {
-        case 'up': return [room[0], room[1] - 1];
+        case 'up': return [room[0], room[1] - 1]; // Assuming y decreases as you go up
         case 'down': return [room[0], room[1] + 1];
         case 'left': return [room[0] - 1, room[1]];
         case 'right': return [room[0] + 1, room[1]];
