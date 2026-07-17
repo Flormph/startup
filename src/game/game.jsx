@@ -54,6 +54,7 @@ export function Game() {
             canvas.width = width;
             canvas.height = height;
         }
+        resizeCanvas(); // Initial resize
         window.addEventListener('resize', resizeCanvas);
 
         function getUnit(canvasWidth) {
@@ -136,7 +137,7 @@ export function Game() {
                 }
             }
 
-            draw(cx, canvas, unit, player, roomLayout, currentTime / 1000, deltaTime);
+            draw(ctx, canvas, unit, player, roomLayout, currentTime / 1000, deltaTime);
             clearFrameKeys();
 
             animationId = requestAnimationFrame(gameLoop);
@@ -152,29 +153,31 @@ export function Game() {
     }, []);
 
     return (
-        <div ref={containerRef} className="w-full mx-auto p-4 flex justify-center items-center">
-            <canvas ref={canvasRef} className="border-2 border-[hsl(319,25%,46%)] block bg-white max-w-[95vw] max-h-[75vh]" />
+        <div ref={containerRef} className="relative w-full mx-auto p-4 flex justify-center items-center">
+            <div className="relative inline-block">
+                <canvas ref={canvasRef} className="border-2 border-[hsl(319,25%,46%)] block bg-white max-w-[95vw] max-h-[75vh]" />
 
-            {gameState === 'start' && (
-                <StartMenu
-                    onStart={() => setGameState('playing')}
-                    onSettings={() => { prevGameStateRef.current = 'start'; setGameState('settings'); }}
-                />
-            )}
+                {gameState === 'start' && (
+                    <StartMenu
+                        onStart={() => setGameState('playing')}
+                        onSettings={() => { prevGameStateRef.current = 'start'; setGameState('settings'); }}
+                    />
+                )}
 
-            {gameState === 'paused' && (
-                <PauseMenu
-                    onResume={() => setGameState('playing')}
-                    onSettings={() => { prevGameStateRef.current = 'paused'; setGameState('settings'); }}
-                    onQuit={() => setGameState('start')}
-                />
-            )}
+                {gameState === 'paused' && (
+                    <PauseMenu
+                        onResume={() => setGameState('playing')}
+                        onSettings={() => { prevGameStateRef.current = 'paused'; setGameState('settings'); }}
+                        onQuit={() => setGameState('start')}
+                    />
+                )}
 
-            {gameState === 'settings' && (
-                <SettingsMenu
-                    onBack={() => setGameState(prevGameStateRef.current)}
-                />
-            )}
+                {gameState === 'settings' && (
+                    <SettingsMenu
+                        onBack={() => setGameState(prevGameStateRef.current)}
+                    />
+                )}
+            </div>
         </div>
     );
 }
