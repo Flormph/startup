@@ -26,7 +26,7 @@ export function SettingsMenu({ onBack }) {
 
             <button
                 onClick={onBack}
-                className="w-48 py-2 mt-4 rounded border-2 border-[hsl(319,25%,46%)] bg-white text-[hsl(319,25%,46%)] font-semibold hover:bg-[hsl(319,25%,46%)] hover:text-white transition-colors"
+                className="w-[50cqw] max-w-[12rem] py-[1.5cqw] text-[clamp(0.7rem,3cqw,1rem)] rounded border-2 border-[hsl(319,25%,46%)] bg-white text-[hsl(319,25%,46%)] font-semibold hover:bg-[hsl(319,25%,46%)] hover:text-white transition-colors"
             >
                 Back
             </button>
