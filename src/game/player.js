@@ -2,7 +2,7 @@ import { checkCollision } from './collision.js';
 import {
     GRAVITY, MOVE_SPEED, JUMP_FORCE, COYOTE_TIME, SPRINT_JUMP_MULT,
     SPRINT_TIME, SPRINT_MULT, SPRINT_GRACE_PERIOD,
-    STAND_HEIGHT, STAND_WIDTH, CROUCH_HEIGHT, CROUCH_SPEED_MULT,
+    STAND_HEIGHT, STAND_WIDTH, CROUCH_HEIGHT, CROUCH_WIDTH, CROUCH_SPEED_MULT,
     GALLOP_WIDTH, GALLOP_HEIGHT, GALLOP_SPEED_MULT, POUNCE_JUMP_MULT,
     POUNCE_SPEED_MULT, WALL_GRACE_PERIOD, WALL_JUMP_FORCE, WALL_JUMP_PUSH,
     WALL_SLIDE_SPEED, WALL_JUMP_LOCK_TIME,
@@ -136,6 +136,7 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
     if (wantsToCrouch && !player.isCrouching && !player.isGalloping) {
         const heightDiff = player.height - CROUCH_HEIGHT;
         player.height = CROUCH_HEIGHT;
+        player.width = CROUCH_WIDTH;
         player.y += heightDiff;
         player.isCrouching = true;
     } else if (!wantsToCrouch && player.isCrouching) {
@@ -143,7 +144,7 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
         const standingHitbox = {
             x: player.x,
             y: player.y - heightDiff,
-            width: player.width,
+            width: STAND_WIDTH,
             height: STAND_HEIGHT,
         };
 
@@ -151,6 +152,7 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
 
         if (!blocked) {
             player.height = STAND_HEIGHT;
+            player.width = STAND_WIDTH;
             player.y -= heightDiff;
             player.isCrouching = false;
         }
