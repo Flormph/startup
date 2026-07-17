@@ -1,4 +1,4 @@
-export function createInputHandler() {
+export function createInputHandler(onEscape) {
     const keys = {};
     const keysPressed = {};
 
@@ -37,6 +37,10 @@ export function createInputHandler() {
         keysPressed['ArrowDown'] = false;
         keysPressed['KeyS'] = false;
         keysPressed['KeyC'] = false;
+        keysPressed['ArrowLeft'] = false;
+        keysPressed['KeyA'] = false;
+        keysPressed['ArrowRight'] = false;
+        keysPressed['KeyD'] = false;
     }
 
     return { keys, keysPressed, attach, detach, clearFrameKeys };
