@@ -120,7 +120,7 @@ export function Game() {
     }, []);
 
     return (
-        <div ref={containerRef} className="w-full max-w-3xl mx-auto p-4">
+        <div ref={containerRef} className="w-full mx-auto max-w-5xl p-4">
             <canvas ref={canvasRef} className="border-2 border-[hsl(319,25%,46%)] block bg-white w-full" />
         </div>
     );
