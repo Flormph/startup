@@ -23,6 +23,8 @@ public partial class Form1 : Form
         new AxmapExporter(),
     };
 
+    private Panel gridPanel;
+
     public Form1()
     {
         currentGame = new GameMapData();
@@ -38,8 +40,7 @@ public partial class Form1 : Form
         this.DoubleBuffered = true; // Reduce flickering
 
         BuildMenuBar();
-        BuildPalette();
-        BuildExportButton();
+        BuildLayout();
 
         this.Paint += Form1_Paint;
         this.MouseClick += Form1_MouseClick;
@@ -63,11 +64,24 @@ public partial class Form1 : Form
         var saveAsItem = new ToolStripMenuItem("Save Project As...");
         saveAsItem.Click += SaveProjectAs_Click;
 
+        var exportRoomItem = new ToolStripMenuItem("Export Room...");
+        exportRoomItem.Click += ExportRoom_Click;
+
+        var exportAreaItem = new ToolStripMenuItem("Export Area...");
+        exportAreaItem.Click += ExportArea_Click;
+
+        var exportGameItem = new ToolStripMenuItem("Export Game...");
+        exportGameItem.Click += ExportGame_Click;
+
         fileMenu.DropDownItems.Add(newItem);
         fileMenu.DropDownItems.Add(openItem);
         fileMenu.DropDownItems.Add(new ToolStripSeparator());
         fileMenu.DropDownItems.Add(saveItem);
         fileMenu.DropDownItems.Add(saveAsItem);
+        fileMenu.DropDownItems.Add(new ToolStripSeparator());
+        fileMenu.DropDownItems.Add(exportRoomItem);
+        fileMenu.DropDownItems.Add(exportAreaItem);
+        fileMenu.DropDownItems.Add(exportGameItem);
 
         var editMenu = new ToolStripMenuItem("Edit");
         editMenu.DropDownItems.Add(new ToolStripMenuItem("Undo") { Enabled = false });
@@ -144,35 +158,46 @@ public partial class Form1 : Form
         ProjectFile.Save(currentGame, currentProjectPath);
     }
 
+    //TODO: private void BuildLayout(), private Panel BuildPalettePanel(), private Panel BuildInfoPanel(), private void PaletteButton_Click(), private void GridPanel_Paint(), private void GridPanel_MouseClick()...
+
     private RoomData CurrentRoom => currentGame.Areas[currentAreaKey].Rooms[currentRoomKey];
 
-    private void BuildExportButton()
+    private void ExportRoom_Click(object? sender, EventArgs e)
     {
-        var exportButton = new Button
+        var exporter = exporters[0]; // format selection UI still TODO
+
+        using var dialog = new SaveFileDialog
         {
-            Text = "Export Map",
-            Location = new Point(10, GridHeight * CellSize + PaletteHeight + 10),
-            Size = new Size(100, 30)
+            Filter = $"{exporter.FormatName}|*{exporter.FileExtension}",
+            FileName = $"{currentRoomKey}{exporter.FileExtension}",
         };
-        exportButton.Click += ExportButton_Click;
-        this.Controls.Add(exportButton);
+
+        if (dialog.ShowDialog() != DialogResult.OK) return;
+
+        File.WriteAllText(dialog.FileName, exporter.ExportMap(CurrentRoom));
+        MessageBox.Show("Room exported!", "Export");
     }
 
-    private void ExportButton_Click(object? sender, EventArgs e)
+    private void ExportArea_Click(object? sender, EventArgs e)
     {
-        var exporter = exporters[0]; // format selection UI comes later — for now, hardcoded to JSON
+        var exporter = exporters[0];
 
-        using var folderDialog = new FolderBrowserDialog
-        {
-            Description = "Choose export destination",
-        };
-
+        using var folderDialog = new FolderBrowserDialog { Description = "Choose export destination" };
         if (folderDialog.ShowDialog() != DialogResult.OK) return;
 
-        // for now, always exports the whole current Game — scope selection (Room/Area/Game) comes next
-        BatchExporter.ExportGameMap(currentGame, exporter, folderDialog.SelectedPath);
+        BatchExporter.ExportArea(currentGame.Areas[currentAreaKey], exporter, folderDialog.SelectedPath);
+        MessageBox.Show("Area exported!", "Export");
+    }
 
-        MessageBox.Show("Export complete!", "Export");
+    private void ExportGame_Click(object? sender, EventArgs e)
+    {
+        var exporter = exporters[0];
+
+        using var folderDialog = new FolderBrowserDialog { Description = "Choose export destination" };
+        if (folderDialog.ShowDialog() != DialogResult.OK) return;
+
+        BatchExporter.ExportGameMap(currentGame, exporter, folderDialog.SelectedPath);
+        MessageBox.Show("Game exported!", "Export");
     }
 
     private void BuildPalette()
