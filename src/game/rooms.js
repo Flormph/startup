@@ -4,6 +4,9 @@ export function parseRoom(rows, tileSize = 1) {
     const platforms = [];
     const exits = [];
     const teleports = [];
+    const enemies = [];
+    const players = [];
+    const items = [];
 
     rows.forEach((row, rowIndex) => {
         row.split('').forEach((char, colIndex) => {
@@ -16,11 +19,19 @@ export function parseRoom(rows, tileSize = 1) {
                 exits.push({ x, y, direction: EXIT_CHARS[char], width: tileSize, height: tileSize });
             } else if (char >= '1' && char <= '9') {
                 teleports.push({ x, y, width: tileSize, height: tileSize, id: char });
+            } else if (char === 'E') {
+                enemies.push({ x, y, width: tileSize, height: tileSize }); // position comes from the grid
+            } else if (char === 'P') {
+                players.push({ x, y, width: tileSize, height: tileSize }); // position comes from the grid
+            } else if (char === 'I') {
+                items.push({ x, y, width: tileSize, height: tileSize }); // position comes from the grid
+            } else if (char === 'O') {
+                exits.push({ x, y, direction: 'up', width: tileSize, height: tileSize }); // Example for a special exit TODO: define special exit behavior
+                throw new Error("Special exit behavior not implemented yet.");
             }
         });
     });
-    console.log(exits)
-    return { platforms, exits, teleports };
+    return { platforms, exits, teleports, enemies, players, items };
 }
 
 export function getAdjacentRoom(room, direction) {
