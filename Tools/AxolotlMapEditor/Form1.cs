@@ -23,7 +23,9 @@ public partial class Form1 : Form
         new AxmapExporter(),
     };
 
-    private Panel gridPanel;
+    private Panel gridPanel = null!;
+    private ComboBox areaComboBox = null!;
+    private ComboBox roomComboBox = null!;
 
     public Form1()
     {
@@ -36,14 +38,11 @@ public partial class Form1 : Form
         currentRoomKey = "0,0";
 
         this.Text = "Axolotl Map Editor";
-        this.ClientSize = new Size(GridWidth * CellSize + 20, GridHeight * CellSize + 20);
+        this.ClientSize = new Size(1000, 700);
         this.DoubleBuffered = true; // Reduce flickering
 
         BuildMenuBar();
         BuildLayout();
-
-        this.Paint += Form1_Paint;
-        this.MouseClick += Form1_MouseClick;
     }
 
     private void BuildMenuBar()
@@ -158,7 +157,188 @@ public partial class Form1 : Form
         ProjectFile.Save(currentGame, currentProjectPath);
     }
 
-    //TODO: private void BuildLayout(), private Panel BuildPalettePanel(), private Panel BuildInfoPanel(), private void PaletteButton_Click(), private void GridPanel_Paint(), private void GridPanel_MouseClick()...
+    private void BuildLayout()
+    {
+        var verticalSplit = new SplitContainer
+        {
+            Dock = DockStyle.Fill,
+            Orientation = Orientation.Horizontal,
+        };
+
+        var leftSplit = new SplitContainer
+        {
+            Dock = DockStyle.Fill,
+            Orientation = Orientation.Vertical,
+        };
+
+        var rightSplit = new SplitContainer
+        {
+            Dock = DockStyle.Fill,
+            Orientation = Orientation.Vertical,
+        };
+
+        leftSplit.Panel1.Controls.Add(BuildPalettePanel());
+
+        gridPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+        gridPanel.Paint += GridPanel_Paint;
+        gridPanel.MouseClick += GridPanel_MouseClick;
+        rightSplit.Panel1.Controls.Add(gridPanel);
+
+        rightSplit.Panel2.Controls.Add(BuildAreasRoomsPanel());
+
+        leftSplit.Panel2.Controls.Add(rightSplit);
+
+        verticalSplit.Panel1.Controls.Add(leftSplit);
+        verticalSplit.Panel2.Controls.Add(BuildInfoPanel());
+
+        this.Controls.Add(verticalSplit);
+        this.Load += (s, e) =>
+        {
+            leftSplit.SplitterDistance = 110;
+            rightSplit.SplitterDistance = Math.Max(rightSplit.Panel1MinSize, rightSplit.Width - 180);
+            verticalSplit.SplitterDistance = 500;
+        };
+    }
+
+    private Panel BuildPalettePanel()
+    {
+        var panel = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
+
+        var tileTypes = new[]
+        {
+        TileType.Empty, TileType.Wall, TileType.ExitLeft, TileType.ExitRight,
+        TileType.ExitUp, TileType.ExitDown, TileType.ExitOverride, TileType.Teleport,
+        TileType.PlayerSpawn, TileType.EnemySpawn, TileType.ItemSpawn,
+    };
+
+        int y = 10;
+        foreach (var type in tileTypes)
+        {
+            var button = new Button
+            {
+                Text = type.ToString(),
+                Location = new Point(5, y),
+                Size = new Size(90, 28),
+                Tag = type,
+            };
+            button.Click += PaletteButton_Click;
+            panel.Controls.Add(button);
+            y += 33;
+        }
+
+        return panel;
+    }
+
+    private Panel BuildInfoPanel()
+    {
+        var panel = new Panel { Dock = DockStyle.Fill };
+        var label = new Label
+        {
+            Text = "Room / Project Info (music, sprite sheet, palette colors — coming next)",
+            Location = new Point(10, 10),
+            AutoSize = true,
+        };
+        panel.Controls.Add(label);
+        return panel;
+    }
+
+    private void PaletteButton_Click(object? sender, EventArgs e)
+    {
+        var button = (Button)sender!;
+        if (button.Tag is TileType type) selectedTileType = type;
+    }
+
+    private void GridPanel_Paint(object? sender, PaintEventArgs e)
+    {
+        var g = e.Graphics;
+        var room = CurrentRoom;
+
+        for (int y = 0; y < GridHeight; y++)
+        {
+            for (int x = 0; x < GridWidth; x++)
+            {
+                var tile = room.Tiles[y][x];
+                var rect = new Rectangle(x * CellSize, y * CellSize, CellSize, CellSize);
+                g.FillRectangle(new SolidBrush(GetColorForTile(tile.Type)), rect);
+                g.DrawRectangle(Pens.Gray, rect);
+            }
+        }
+    }
+
+    private void GridPanel_MouseClick(object? sender, MouseEventArgs e)
+    {
+        int x = e.X / CellSize;
+        int y = e.Y / CellSize;
+
+        if (x < 0 || x >= GridWidth || y < 0 || y >= GridHeight) return;
+
+        CurrentRoom.Tiles[y][x] = new Tile(selectedTileType);
+        gridPanel.Invalidate();
+    }
+
+    private Panel BuildAreasRoomsPanel()
+    {
+        var panel = new Panel { Dock = DockStyle.Fill };
+
+        var areaLabel = new Label { Text = "Area:", Location = new Point(10, 10), AutoSize = true };
+        areaComboBox = new ComboBox
+        {
+            Location = new Point(10, 30),
+            Width = 150,
+            DropDownStyle = ComboBoxStyle.DropDownList, // prevents free-typing, only allows picking from the list
+        };
+        areaComboBox.SelectedIndexChanged += AreaComboBox_SelectedIndexChanged;
+
+        var roomLabel = new Label { Text = "Room:", Location = new Point(10, 65), AutoSize = true };
+        roomComboBox = new ComboBox
+        {
+            Location = new Point(10, 85),
+            Width = 150,
+            DropDownStyle = ComboBoxStyle.DropDownList,
+        };
+        roomComboBox.SelectedIndexChanged += RoomComboBox_SelectedIndexChanged;
+
+        panel.Controls.Add(areaLabel);
+        panel.Controls.Add(areaComboBox);
+        panel.Controls.Add(roomLabel);
+        panel.Controls.Add(roomComboBox);
+
+        RefreshAreaComboBox();
+
+        return panel;
+    }
+
+    private void RefreshAreaComboBox()
+    {
+        areaComboBox.Items.Clear();
+        foreach (var key in currentGame.Areas.Keys)
+            areaComboBox.Items.Add(key);
+        areaComboBox.SelectedItem = currentAreaKey;
+    }
+
+    private void RefreshRoomComboBox()
+    {
+        roomComboBox.Items.Clear();
+        foreach (var key in currentGame.Areas[currentAreaKey].Rooms.Keys)
+            roomComboBox.Items.Add(key);
+        roomComboBox.SelectedItem = currentRoomKey;
+    }
+
+    private void AreaComboBox_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        if (areaComboBox.SelectedItem is not string selected) return;
+        currentAreaKey = selected;
+        currentRoomKey = currentGame.Areas[currentAreaKey].Rooms.Keys.First();
+        RefreshRoomComboBox();
+        gridPanel.Invalidate();
+    }
+
+    private void RoomComboBox_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        if (roomComboBox.SelectedItem is not string selected) return;
+        currentRoomKey = selected;
+        gridPanel.Invalidate();
+    }
 
     private RoomData CurrentRoom => currentGame.Areas[currentAreaKey].Rooms[currentRoomKey];
 
@@ -200,70 +380,6 @@ public partial class Form1 : Form
         MessageBox.Show("Game exported!", "Export");
     }
 
-    private void BuildPalette()
-    {
-        var tileTypes = new[]
-        {
-            TileType.Empty,
-            TileType.Wall,
-            TileType.ExitLeft,
-            TileType.ExitRight,
-            TileType.ExitUp,
-            TileType.ExitDown,
-            TileType.ExitOverride,
-            TileType.Teleport,
-            TileType.PlayerSpawn,
-            TileType.EnemySpawn,
-            TileType.ItemSpawn
-        };
-
-        int buttonWidth = 70;
-        int x = 10;
-
-        foreach (var type in tileTypes)
-        {
-            var button = new Button
-            {
-                Text = type.ToString(),
-                Location = new Point(x, GridHeight * CellSize + 10),
-                Size = new Size(buttonWidth, PaletteHeight - 10),
-                Tag = type // Store the tile type in the button's Tag property
-            };
-            button.Click += PaletteButton_Click;
-            this.Controls.Add(button);
-
-            x += buttonWidth + 5;
-        }
-    }
-
-    private void PaletteButton_Click(object? sender, EventArgs e)
-    {
-        var button = (Button)sender!;
-        if (button.Tag is TileType type)
-        {
-            selectedTileType = type;
-        }
-    }
-
-    private void Form1_Paint(object? sender, PaintEventArgs e)
-    {
-        var g = e.Graphics;
-
-        // Draw grid
-        for (int x = 0; x < GridWidth; x++)
-        {
-            for (int y = 0; y < GridHeight; y++)
-            {
-                var tile = CurrentRoom.Tiles[y][x];
-                var color = GetColorForTile(tile.Type);
-
-                var rect = new Rectangle(x * CellSize, y * CellSize, CellSize, CellSize);
-                g.FillRectangle(new SolidBrush(color), rect);
-                g.DrawRectangle(Pens.Black, rect);
-            }
-        }
-    }
-
     private Color GetColorForTile(TileType type)
     {
         switch (type)
@@ -280,16 +396,5 @@ public partial class Form1 : Form
             case TileType.PlayerSpawn: return Color.DodgerBlue;
             default: return Color.LightGray;
         }
-    }
-
-    private void Form1_MouseClick(object? sender, MouseEventArgs e)
-    {
-        int x = e.X / CellSize;
-        int y = e.Y / CellSize;
-
-        if (x < 0 || x >= GridWidth || y < 0 || y >= GridHeight) return;
-
-        CurrentRoom.Tiles[y][x] = new Tile(selectedTileType);
-        this.Invalidate(); // Redraw the form
     }
 }
