@@ -124,7 +124,7 @@ public class RoomData //Represents the data for a room in the map editor
     public List<PlayerSpawn> Players { get; set; } = new List<PlayerSpawn>(); // List of player spawn points in the room
     public List<ExitData> Exits { get; set; } = new List<ExitData>(); // List of exits in the room
     public List<TeleportData> Teleports { get; set; } = new List<TeleportData>(); // List of teleports in the room
-    public string Music { get; set; } = ""; // Music track for the room
+    public string? Music { get; set; } = null; // Music track for the room
 
     public RoomData(int width, int height) // Constructor to initialize the room data with specified width and height
     {
@@ -165,7 +165,7 @@ public class JsStringArrayExporter : IMapExporter //Export to Json
             case TileType.ExitUp: return 'U';
             case TileType.ExitDown: return 'D';
             case TileType.ExitOverride: return 'O';
-            case TileType.Teleport: return tile.TeleportId.HasValue ? (char)('0' + tile.TeleportId.Value) : 'T';
+            case TileType.Teleport: return 'T';
             case TileType.PlayerSpawn: return 'P';
             case TileType.EnemySpawn: return 'E';
             case TileType.ItemSpawn: return 'I';
@@ -180,6 +180,7 @@ public class JsStringArrayExporter : IMapExporter //Export to Json
         var itemsInScanOrder = new List<ItemSpawn>();
         var exitOverridesInScanOrder = new List<ExitData>();
         var playersInScanOrder = new List<PlayerSpawn>();
+        var teleportsInScanOrder = new List<TeleportData>();
 
         var layoutLines = new List<string>();
 
@@ -207,6 +208,10 @@ public class JsStringArrayExporter : IMapExporter //Export to Json
                 {
                     playersInScanOrder.Add(room.Players[tile.PlayerSpawnId.Value]);
                 }
+                if (tile.Type == TileType.Teleport && tile.TeleportId.HasValue)
+                {
+                    teleportsInScanOrder.Add(room.Teleports[tile.TeleportId.Value]);
+                }
             }
             layoutLines.Add(new string(rowChars.ToArray()));
         }
@@ -216,7 +221,8 @@ public class JsStringArrayExporter : IMapExporter //Export to Json
             enemies = enemiesInScanOrder,
             items = itemsInScanOrder,
             players = playersInScanOrder,
-            exitOverrides = exitOverridesInScanOrder,
+            exits = exitOverridesInScanOrder, // Export exit overrides in scan order
+            teleports = teleportsInScanOrder,    // Export teleports in scan order
             music = room.Music,
         };
 
