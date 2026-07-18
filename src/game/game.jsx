@@ -99,7 +99,16 @@ export function Game() {
 
                 enemies = parsed.enemies.map((pos, i) => ({ ...pos, ...roomData.enemies[i] })); // Assign unique IDs to enemies
                 items = parsed.items.map((pos, i) => ({ ...pos, ...roomData.items[i] })); // Assign unique IDs to items
-                players = parsed.players.map((pos, i) => ({ ...pos, ...roomData.players[i] })); // Assign unique IDs to players
+
+                if (players.length === 0) { // TODO: will probably break when multiple players are added later
+                    players = parsed.players.map((pos, i) => {
+                        const p = createPlayer(); // real player object, all physics fields present
+                        p.x = pos.x;
+                        p.y = pos.y;
+                        p.id = roomData.players[i]?.id ?? i; // fallback to index if no id provided
+                        return p;
+                    });
+                }
 
                 music = roomData.music;
                 loadedRoom = playerRoom;
