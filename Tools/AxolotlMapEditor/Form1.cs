@@ -10,6 +10,10 @@ public partial class Form1 : Form
     private const int CellSize = 20;
     private const int PaletteHeight = 40;
 
+    private GameMapData currentGame;
+    private string currentAreaKey;
+    private string currentRoomKey;
+
     private RoomData currentRoom;
     private TileType selectedTileType = TileType.Wall;
     private readonly List<IMapExporter> exporters = new List<IMapExporter>
@@ -20,7 +24,15 @@ public partial class Form1 : Form
 
     public Form1()
     {
-        currentRoom = new RoomData(GridWidth, GridHeight);
+        currentGame = new GameMapData();
+
+        var startingArea = new AreaData { Name = "New Area" };
+        var startingRoom = new RoomData(GridWidth, GridHeight);
+        startingArea.Rooms["0,0"] = startingRoom;
+        currentGame.Areas["New Area"] = startingArea;
+
+        currentAreaKey = "New Area";
+        currentRoomKey = "0,0";
 
         this.Text = "Axolotl Map Editor";
         this.ClientSize = new Size(GridWidth * CellSize + 20, GridHeight * CellSize + 20);
@@ -32,6 +44,8 @@ public partial class Form1 : Form
         this.Paint += Form1_Paint;
         this.MouseClick += Form1_MouseClick;
     }
+
+    private RoomData CurrentRoom => currentGame.Areas[currentAreaKey].Rooms[currentRoomKey];
 
     private void BuildExportButton()
     {
@@ -47,21 +61,19 @@ public partial class Form1 : Form
 
     private void ExportButton_Click(object? sender, EventArgs e)
     {
-        var exporter = exporters[0]; // For now, just use the first exporter. You can add a dropdown to select different exporters later.
+        var exporter = exporters[0]; // format selection UI comes later — for now, hardcoded to JSON
 
-        string output = exporter.ExportMap(currentRoom);
-
-        using var dialog = new SaveFileDialog
+        using var folderDialog = new FolderBrowserDialog
         {
-            Filter = $"{exporter.FormatName}|*{exporter.FileExtension}",
-            FileName = $"room{exporter.FileExtension}"
+            Description = "Choose export destination",
         };
 
-        if (dialog.ShowDialog() == DialogResult.OK)
-        {
-            File.WriteAllText(dialog.FileName, output);
-            MessageBox.Show($"Map exported to {dialog.FileName}", "Export Successful", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
+        if (folderDialog.ShowDialog() != DialogResult.OK) return;
+
+        // for now, always exports the whole current Game — scope selection (Room/Area/Game) comes next
+        BatchExporter.ExportGameMap(currentGame, exporter, folderDialog.SelectedPath);
+
+        MessageBox.Show("Export complete!", "Export");
     }
 
     private void BuildPalette()
@@ -118,7 +130,7 @@ public partial class Form1 : Form
         {
             for (int y = 0; y < GridHeight; y++)
             {
-                var tile = currentRoom.Tiles[y][x];
+                var tile = CurrentRoom.Tiles[y][x];
                 var color = GetColorForTile(tile.Type);
 
                 var rect = new Rectangle(x * CellSize, y * CellSize, CellSize, CellSize);
@@ -153,7 +165,7 @@ public partial class Form1 : Form
 
         if (x < 0 || x >= GridWidth || y < 0 || y >= GridHeight) return;
 
-        currentRoom.Tiles[y][x] = new Tile(selectedTileType);
+        CurrentRoom.Tiles[y][x] = new Tile(selectedTileType);
         this.Invalidate(); // Redraw the form
     }
 }

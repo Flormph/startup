@@ -133,6 +133,37 @@ public class RoomData //Represents the data for a room in the map editor
     }
 }
 
+public class AreaData
+{
+    public string Name { get; set; } = "New Area";
+    public Dictionary<string, RoomData> Rooms { get; set; } = new Dictionary<string, RoomData>();
+    // key = "x,y" coordinates of the room, value = RoomData
+}
+
+public class GameMapData
+{
+    public string Name { get; set; } = "New Map";
+    public Dictionary<string, AreaData> Areas { get; set; } = new Dictionary<string, AreaData>();
+    // key = area name, value = AreaData
+}
+
+public class ProjectFile
+{
+    public static void Save(GameMapData gameMap, string path)
+    {
+        var options = new JsonSerializerOptions { WriteIndented = true };
+        var json = JsonSerializer.Serialize(gameMap, options);
+        File.WriteAllText(path, json);
+    }
+
+    public static GameMapData Load(string path)
+    {
+        string json = File.ReadAllText(path);
+        var options = new JsonSerializerOptions();
+        return JsonSerializer.Deserialize<GameMapData>(json, options) ?? throw new InvalidOperationException("Failed to load project file.");
+    }
+}
+
 public interface IMapExporter
 {
     string FormatName { get; }
@@ -230,5 +261,39 @@ public class AxmapExporter : IMapExporter  //NotImplemented
     public string ExportMap(RoomData room)
     {
         return string.Join("\n", room.Tiles.Select(row => string.Concat(row.Select(tile => tile.ToString()))));
+    }
+}
+
+public static class BatchExporter
+{
+    public static void ExportArea(AreaData area, IMapExporter exporter, string folderPath)
+    {
+        Directory.CreateDirectory(folderPath);
+
+        foreach (var (roomKey, room) in area.Rooms)
+        {
+            string output = exporter.ExportMap(room);
+            string fileName = $"{SanitizeFileName(roomKey)}{exporter.FileExtension}";
+            string fullPath = Path.Combine(folderPath, fileName);
+            File.WriteAllText(fullPath, output);
+        }
+    }
+
+    public static void ExportGameMap(GameMapData gameMap, IMapExporter exporter, string rootFolderPath)
+    {
+        foreach (var (areaName, area) in gameMap.Areas)
+        {
+            string areaFolderPath = Path.Combine(rootFolderPath, SanitizeFileName(areaName));
+            ExportArea(area, exporter, areaFolderPath);
+        }
+    }
+
+    private static string SanitizeFileName(string name)
+    {
+        foreach (char c in Path.GetInvalidFileNameChars())
+        {
+            name = name.Replace(c, '_');
+        }
+        return name;
     }
 }
