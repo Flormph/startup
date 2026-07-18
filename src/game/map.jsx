@@ -15,7 +15,7 @@ const ROOM_1 = {
         "#              ##            #",
         "L        ###                 R",
         "L                   ###      R",
-        "L                            R",
+        "L             P              R",
         "##############################"
     ],
     enemies: [],
@@ -23,6 +23,7 @@ const ROOM_1 = {
     music: null,
     exits: {},
     teleports: {},
+    players: [{ id: 0 }],
 };
 
 const ROOM_2 = {
@@ -50,6 +51,7 @@ const ROOM_2 = {
     music: null,
     exits: {},
     teleports: {},
+    players: [],
 };
 
 const ROOM_3 = {
@@ -77,6 +79,7 @@ const ROOM_3 = {
     music: null,
     exits: {},
     teleports: {},
+    players: [],
 };
 const ROOM_4 = {
     layout: [
@@ -103,8 +106,9 @@ const ROOM_4 = {
     music: null,
     exits: {},
     teleports: {},
+    players: [],
 };
-const ROOM_5= {
+const ROOM_5 = {
     layout: [
         "##############################",
         "#                            #",
@@ -129,14 +133,15 @@ const ROOM_5= {
     music: null,
     exits: {},
     teleports: {},
+    players: [],
 };
 
-const MAP = {
+const MAP = { // Y DECREASES AS YOU GO UP!!!
     "0,0": ROOM_1,
     "1,0": ROOM_2,
     "-1,0": ROOM_3,
     "-2,0": ROOM_4,
-    "-2,1": ROOM_5,
+    "-2,-1": ROOM_5,
 };
 
 export function getRoom(room) {
