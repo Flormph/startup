@@ -5,7 +5,7 @@ export function parseRoom(rows, tileSize = 1) {
     const exits = [];
     const teleports = [];
     const enemies = [];
-    const players = [];
+    let players = [];
     const items = [];
 
     rows.forEach((row, rowIndex) => {
@@ -17,8 +17,8 @@ export function parseRoom(rows, tileSize = 1) {
                 platforms.push({ x, y, width: tileSize, height: tileSize });
             } else if (EXIT_CHARS[char]) {
                 exits.push({ x, y, direction: EXIT_CHARS[char], width: tileSize, height: tileSize });
-            } else if (char >= '1' && char <= '9') {
-                teleports.push({ x, y, width: tileSize, height: tileSize, id: char });
+            } else if (char === 'T') {
+                teleports.push({ x, y, width: tileSize, height: tileSize });
             } else if (char === 'E') {
                 enemies.push({ x, y, width: tileSize, height: tileSize }); // position comes from the grid
             } else if (char === 'P') {
