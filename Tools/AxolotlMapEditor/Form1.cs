@@ -9,12 +9,13 @@ public partial class Form1 : Form
     private const int GridHeight = 17;
     private const int CellSize = 20;
     private const int PaletteHeight = 40;
+    private const int MenuHeight = 24; // Height of the menu bar
 
     private GameMapData currentGame;
     private string currentAreaKey;
     private string currentRoomKey;
+    private string? currentProjectPath = null; // Path to the current project file, if any
 
-    private RoomData currentRoom;
     private TileType selectedTileType = TileType.Wall;
     private readonly List<IMapExporter> exporters = new List<IMapExporter>
     {
@@ -25,12 +26,10 @@ public partial class Form1 : Form
     public Form1()
     {
         currentGame = new GameMapData();
-
         var startingArea = new AreaData { Name = "New Area" };
         var startingRoom = new RoomData(GridWidth, GridHeight);
         startingArea.Rooms["0,0"] = startingRoom;
         currentGame.Areas["New Area"] = startingArea;
-
         currentAreaKey = "New Area";
         currentRoomKey = "0,0";
 
@@ -38,11 +37,111 @@ public partial class Form1 : Form
         this.ClientSize = new Size(GridWidth * CellSize + 20, GridHeight * CellSize + 20);
         this.DoubleBuffered = true; // Reduce flickering
 
+        BuildMenuBar();
         BuildPalette();
         BuildExportButton();
 
         this.Paint += Form1_Paint;
         this.MouseClick += Form1_MouseClick;
+    }
+
+    private void BuildMenuBar()
+    {
+        var menuStrip = new MenuStrip();
+
+        var fileMenu = new ToolStripMenuItem("File");
+
+        var newItem = new ToolStripMenuItem("New Project");
+        newItem.Click += NewProject_Click;
+
+        var openItem = new ToolStripMenuItem("Open Project");
+        openItem.Click += OpenProject_Click;
+
+        var saveItem = new ToolStripMenuItem("Save Project");
+        saveItem.Click += SaveProject_Click;
+
+        var saveAsItem = new ToolStripMenuItem("Save Project As...");
+        saveAsItem.Click += SaveProjectAs_Click;
+
+        fileMenu.DropDownItems.Add(newItem);
+        fileMenu.DropDownItems.Add(openItem);
+        fileMenu.DropDownItems.Add(new ToolStripSeparator());
+        fileMenu.DropDownItems.Add(saveItem);
+        fileMenu.DropDownItems.Add(saveAsItem);
+
+        var editMenu = new ToolStripMenuItem("Edit");
+        editMenu.DropDownItems.Add(new ToolStripMenuItem("Undo") { Enabled = false });
+        editMenu.DropDownItems.Add(new ToolStripMenuItem("Redo") { Enabled = false });
+
+        var viewMenu = new ToolStripMenuItem("View");
+        viewMenu.DropDownItems.Add(new ToolStripMenuItem("Zoom In") { Enabled = false });
+        viewMenu.DropDownItems.Add(new ToolStripMenuItem("Zoom Out") { Enabled = false });
+
+        menuStrip.Items.Add(fileMenu);
+        menuStrip.Items.Add(editMenu);
+        menuStrip.Items.Add(viewMenu);
+        this.MainMenuStrip = menuStrip;
+        this.Controls.Add(menuStrip);
+    }
+
+    private void NewProject_Click(object? sender, EventArgs e)
+    {
+        var result = MessageBox.Show("Discard current project and start a new one?", "New Project", MessageBoxButtons.YesNo);
+        if (result != DialogResult.Yes) return;
+
+        currentGame = new GameMapData();
+        var startingArea = new AreaData { Name = "New Area" };
+        var startingRoom = new RoomData(GridWidth, GridHeight);
+        startingArea.Rooms["0,0"] = startingRoom;
+        currentGame.Areas["New Area"] = startingArea;
+        currentAreaKey = "New Area";
+        currentRoomKey = "0,0";
+        currentProjectPath = null; // Reset the project path
+
+        this.Invalidate(); // Redraw the form
+    }
+
+    private void OpenProject_Click(object? sender, EventArgs e)
+    {
+        using var dialog = new OpenFileDialog
+        {
+            Filter = "Axolotl Project (*.axproj)|*.axproj|All files (*.*)|*.*",
+            Title = "Open Axolotl Project"
+        };
+
+        if (dialog.ShowDialog() != DialogResult.OK) return;
+
+        currentGame = ProjectFile.Load(dialog.FileName);
+        currentAreaKey = currentGame.Areas.Keys.First();
+        currentRoomKey = currentGame.Areas[currentAreaKey].Rooms.Keys.First();
+        currentProjectPath = dialog.FileName; // Store the path of the opened project
+
+        this.Invalidate(); // Redraw the form
+    }
+
+    private void SaveProject_Click(object? sender, EventArgs e)
+    {
+        if (currentProjectPath == null)
+        {
+            SaveProjectAs_Click(sender, e);
+            return;
+        }
+
+        ProjectFile.Save(currentGame, currentProjectPath);
+    }
+
+    private void SaveProjectAs_Click(object? sender, EventArgs e)
+    {
+        using var dialog = new SaveFileDialog
+        {
+            Filter = "Axolotl Project (*.axproj)|*.axproj|All files (*.*)|*.*",
+            Title = "Save Axolotl Project As"
+        };
+
+        if (dialog.ShowDialog() != DialogResult.OK) return;
+
+        currentProjectPath = dialog.FileName;
+        ProjectFile.Save(currentGame, currentProjectPath);
     }
 
     private RoomData CurrentRoom => currentGame.Areas[currentAreaKey].Rooms[currentRoomKey];
