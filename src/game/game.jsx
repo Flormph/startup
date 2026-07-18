@@ -77,10 +77,10 @@ export function Game() {
         let roomData = null;
         let roomLayout = null;
         let roomExits = null;
-        let roomTeleports = null;
         let enemies = [];
         let items = [];
         let music = null;
+        let teleports = [];
 
         function gameLoop(currentTime) {
             let deltaTime = (currentTime - lastTime) / 1000;
@@ -95,10 +95,10 @@ export function Game() {
                 const parsed = parseRoom(roomData.layout);
                 roomLayout = parsed.platforms;
                 roomExits = parsed.exits;
-                roomTeleports = parsed.teleports;
 
                 enemies = parsed.enemies.map((pos, i) => ({ ...pos, ...roomData.enemies[i] })); // Assign unique IDs to enemies
                 items = parsed.items.map((pos, i) => ({ ...pos, ...roomData.items[i] })); // Assign unique IDs to items
+                teleports = parsed.teleports.map((pos, i) => ({ ...pos, ...roomData.teleports[i] })); // Assign unique IDs to teleports
 
                 if (players.length === 0) { // TODO: will probably break when multiple players are added later
                     players = parsed.players.map((pos, i) => {
@@ -142,22 +142,20 @@ export function Game() {
                 }
 
                 for (const player of players) {
-                    for (const teleport of roomTeleports) {
+                    for (const teleport of teleports) {
                         const centerX = player.x + player.width / 2;
                         const centerY = player.y + player.height / 2;
                         const inside = centerX >= teleport.x && centerX <= teleport.x + teleport.width &&
                             centerY >= teleport.y && centerY <= teleport.y + teleport.height;
                         if (inside) {
-                            const dest = roomData.teleports?.[teleport.id];
-                            if (dest) {
-                                playerRoom = dest.toRoom;
-                                player.x = dest.spawnAt.x;
-                                player.y = dest.spawnAt.y;
-                                player.vx = 0;
-                                player.vy = 0;
-                            }
+                            playerRoom = teleport.toRoom;
+                            player.x = teleport.spawnAt.x;
+                            player.y = teleport.spawnAt.y;
+                            player.vx = 0;
+                            player.vy = 0;
                             break;
                         }
+
                     }
                 }
             }
