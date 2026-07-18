@@ -12,6 +12,11 @@ public partial class Form1 : Form
 
     private RoomData currentRoom;
     private TileType selectedTileType = TileType.Wall;
+    private readonly List<IMapExporter> exporters = new List<IMapExporter>
+    {
+        new JsStringArrayExporter(),
+        new AxmapExporter(),
+    };
 
     public Form1()
     {
@@ -22,9 +27,41 @@ public partial class Form1 : Form
         this.DoubleBuffered = true; // Reduce flickering
 
         BuildPalette();
+        BuildExportButton();
 
         this.Paint += Form1_Paint;
         this.MouseClick += Form1_MouseClick;
+    }
+
+    private void BuildExportButton()
+    {
+        var exportButton = new Button
+        {
+            Text = "Export Map",
+            Location = new Point(10, GridHeight * CellSize + PaletteHeight + 10),
+            Size = new Size(100, 30)
+        };
+        exportButton.Click += ExportButton_Click;
+        this.Controls.Add(exportButton);
+    }
+
+    private void ExportButton_Click(object? sender, EventArgs e)
+    {
+        var exporter = exporters[0]; // For now, just use the first exporter. You can add a dropdown to select different exporters later.
+
+        string output = exporter.ExportMap(currentRoom);
+
+        using var dialog = new SaveFileDialog
+        {
+            Filter = $"{exporter.FormatName}|*{exporter.FileExtension}",
+            FileName = $"room{exporter.FileExtension}"
+        };
+
+        if (dialog.ShowDialog() == DialogResult.OK)
+        {
+            File.WriteAllText(dialog.FileName, output);
+            MessageBox.Show($"Map exported to {dialog.FileName}", "Export Successful", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
     }
 
     private void BuildPalette()

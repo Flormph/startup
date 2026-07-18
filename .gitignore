@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# .NET build output
+*/AxolotlMapEditor/bin/
+*/AxolotlMapEditor/obj/
+*.user
+
 
 # Editor directories and files
 .vscode/*
