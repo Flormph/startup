@@ -95,15 +95,6 @@ public class ItemSpawn
     public int Y { get; set; }
 }
 
-public class ExitData
-{
-    public int X { get; set; }
-    public int Y { get; set; }
-    public required string TargetRoom { get; set; }
-    public int TargetX { get; set; }
-    public int TargetY { get; set; }
-}
-
 public class TeleportData
 {
     public int X { get; set; }
@@ -122,7 +113,7 @@ public class RoomData //Represents the data for a room in the map editor
     public List<EnemySpawn> Enemies { get; set; } = new List<EnemySpawn>(); // List of enemies in the room
     public List<ItemSpawn> Items { get; set; } = new List<ItemSpawn>(); // List of items in the room
     public List<PlayerSpawn> Players { get; set; } = new List<PlayerSpawn>(); // List of player spawn points in the room
-    public List<ExitData> Exits { get; set; } = new List<ExitData>(); // List of exits in the room
+    public List<TeleportData> Exits { get; set; } = new List<TeleportData>(); // List of exits in the room
     public List<TeleportData> Teleports { get; set; } = new List<TeleportData>(); // List of teleports in the room
     public string? Music { get; set; } = null; // Music track for the room
 
@@ -178,7 +169,7 @@ public class JsStringArrayExporter : IMapExporter //Export to Json
     {
         var enemiesInScanOrder = new List<EnemySpawn>();
         var itemsInScanOrder = new List<ItemSpawn>();
-        var exitOverridesInScanOrder = new List<ExitData>();
+        var exitOverridesInScanOrder = new List<TeleportData>();
         var playersInScanOrder = new List<PlayerSpawn>();
         var teleportsInScanOrder = new List<TeleportData>();
 
