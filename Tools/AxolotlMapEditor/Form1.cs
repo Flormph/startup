@@ -41,13 +41,14 @@ public partial class Form1 : Form
         this.ClientSize = new Size(1000, 700);
         this.DoubleBuffered = true; // Reduce flickering
 
-        BuildMenuBar();
         BuildLayout();
+        BuildMenuBar();
     }
 
     private void BuildMenuBar()
     {
         var menuStrip = new MenuStrip();
+        menuStrip.Dock = DockStyle.Top;
 
         var fileMenu = new ToolStripMenuItem("File");
 
@@ -194,8 +195,8 @@ public partial class Form1 : Form
         this.Controls.Add(verticalSplit);
         this.Load += (s, e) =>
         {
-            leftSplit.SplitterDistance = 110;
-            rightSplit.SplitterDistance = Math.Max(rightSplit.Panel1MinSize, rightSplit.Width - 180);
+            leftSplit.SplitterDistance = 140;
+            rightSplit.SplitterDistance = Math.Max(rightSplit.Panel1MinSize, rightSplit.Width - 200);
             verticalSplit.SplitterDistance = 500;
         };
     }
@@ -211,7 +212,7 @@ public partial class Form1 : Form
         TileType.PlayerSpawn, TileType.EnemySpawn, TileType.ItemSpawn,
     };
 
-        int y = 10;
+        int y = 40;
         foreach (var type in tileTypes)
         {
             var button = new Button
@@ -283,16 +284,16 @@ public partial class Form1 : Form
         var areaLabel = new Label { Text = "Area:", Location = new Point(10, 10), AutoSize = true };
         areaComboBox = new ComboBox
         {
-            Location = new Point(10, 30),
+            Location = new Point(10, 40),
             Width = 150,
             DropDownStyle = ComboBoxStyle.DropDownList, // prevents free-typing, only allows picking from the list
         };
         areaComboBox.SelectedIndexChanged += AreaComboBox_SelectedIndexChanged;
 
-        var roomLabel = new Label { Text = "Room:", Location = new Point(10, 65), AutoSize = true };
+        var roomLabel = new Label { Text = "Room:", Location = new Point(10, 75), AutoSize = true };
         roomComboBox = new ComboBox
         {
-            Location = new Point(10, 85),
+            Location = new Point(10, 95),
             Width = 150,
             DropDownStyle = ComboBoxStyle.DropDownList,
         };
