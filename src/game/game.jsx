@@ -67,10 +67,10 @@ export function Game() {
 
         loadSprites('Axolotl_Player.png', 'Axolotl_Player.json');
 
-        const player = createPlayer();
         const { keys, keysPressed, attach, detach, clearFrameKeys } = createInputHandler(togglePause);
         attach();
 
+        let players = [];
         let lastTime = performance.now();
         let playerRoom = [0, 0];
         let loadedRoom = null;
@@ -92,56 +92,69 @@ export function Game() {
 
             if (!loadedRoom || playerRoom[0] !== loadedRoom[0] || playerRoom[1] !== loadedRoom[1]) {
                 roomData = getRoom(playerRoom);
-                ({ platforms: roomLayout, exits: roomExits, teleports: roomTeleports } = parseRoom(roomData.layout));
-                enemies = roomData.enemies;
-                items = roomData.items;
+                const parsed = parseRoom(roomData.layout);
+                roomLayout = parsed.platforms;
+                roomExits = parsed.exits;
+                roomTeleports = parsed.teleports;
+
+                enemies = parsed.enemies.map((pos, i) => ({ ...pos, ...roomData.enemies[i] })); // Assign unique IDs to enemies
+                items = parsed.items.map((pos, i) => ({ ...pos, ...roomData.items[i] })); // Assign unique IDs to items
+                players = parsed.players.map((pos, i) => ({ ...pos, ...roomData.players[i] })); // Assign unique IDs to players
+
                 music = roomData.music;
                 loadedRoom = playerRoom;
             }
 
             if (isPlaying) {
-                updatePlayer(player, deltaTime, keys, keysPressed, roomLayout);
+                for (const player of players) {
+                    updatePlayer(player, deltaTime, keys, keysPressed, roomLayout);
+                }
 
 
                 // room transition check — lives here, not in player.js, since it's game-state, not player physics
-                for (const exit of roomExits) {
-                    if (checkExitTrigger(player, exit)) {
-                        const override = roomData.exits?.[exit.direction]?.toRoom;
-                        const destCoord = override ?? getAdjacentRoom(playerRoom, exit.direction);
-                        const destRoomData = getRoom(destCoord);
+                for (const player of players) {
+                    for (const exit of roomExits) {
+                        if (checkExitTrigger(player, exit)) {
+                            const override = roomData.exits?.[exit.direction]?.toRoom;
+                            const destCoord = override ?? getAdjacentRoom(playerRoom, exit.direction);
+                            const destRoomData = getRoom(destCoord);
 
-                        if (destRoomData) {
-                            const destParsed = parseRoom(destRoomData.layout);
-                            const spawn = findEntryPoint(destParsed.exits, exit.direction, player);
-                            playerRoom = destCoord;
-                            player.x = spawn.x;
-                            player.y = spawn.y;
-                            player.vx = 0;
+                            if (destRoomData) {
+                                const destParsed = parseRoom(destRoomData.layout);
+                                const spawn = findEntryPoint(destParsed.exits, exit.direction, player);
+                                playerRoom = destCoord;
+                                player.x = spawn.x;
+                                player.y = spawn.y;
+                                player.vx = 0;
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
 
-                for (const teleport of roomTeleports) {
-                    const centerX = player.x + player.width / 2;
-                    const centerY = player.y + player.height / 2;
-                    const inside = centerX >= teleport.x && centerX <= teleport.x + teleport.width &&
-                        centerY >= teleport.y && centerY <= teleport.y + teleport.height;
-                    if (inside) {
-                        const dest = roomData.teleports?.[teleport.id];
-                        if (dest) {
-                            playerRoom = dest.toRoom;
-                            player.x = dest.spawnAt.x;
-                            player.y = dest.spawnAt.y;
-                            player.vx = 0;
-                            player.vy = 0;
+                for (const player of players) {
+                    for (const teleport of roomTeleports) {
+                        const centerX = player.x + player.width / 2;
+                        const centerY = player.y + player.height / 2;
+                        const inside = centerX >= teleport.x && centerX <= teleport.x + teleport.width &&
+                            centerY >= teleport.y && centerY <= teleport.y + teleport.height;
+                        if (inside) {
+                            const dest = roomData.teleports?.[teleport.id];
+                            if (dest) {
+                                playerRoom = dest.toRoom;
+                                player.x = dest.spawnAt.x;
+                                player.y = dest.spawnAt.y;
+                                player.vx = 0;
+                                player.vy = 0;
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
             }
-
-            draw(ctx, canvas, unit, player, roomLayout, currentTime / 1000, deltaTime);
+            for (const player of players) {
+                draw(ctx, canvas, unit, player, roomLayout, currentTime / 1000, deltaTime);
+            }
             clearFrameKeys();
 
             animationId = requestAnimationFrame(gameLoop);
