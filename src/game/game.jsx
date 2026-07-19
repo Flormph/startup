@@ -72,6 +72,7 @@ export function Game() {
 
         let players = [];
         let lastTime = performance.now();
+        let playerArea = 'New Area'; // current area name
         let playerRoom = [0, 0];
         let loadedRoom = null;
         let roomData = null;
@@ -91,7 +92,7 @@ export function Game() {
             const isPlaying = gameStateRef.current === 'playing';
 
             if (!loadedRoom || playerRoom[0] !== loadedRoom[0] || playerRoom[1] !== loadedRoom[1]) {
-                roomData = getRoom(playerRoom);
+                roomData = getRoom(playerArea, playerRoom);
                 const parsed = parseRoom(roomData.layout);
                 roomLayout = parsed.platforms;
                 roomExits = parsed.exits;
@@ -124,9 +125,9 @@ export function Game() {
                 for (const player of players) {
                     for (const exit of roomExits) {
                         if (checkExitTrigger(player, exit)) {
-                            const override = roomData.exits?.[exit.direction]?.toRoom;
-                            const destCoord = override ?? getAdjacentRoom(playerRoom, exit.direction);
-                            const destRoomData = getRoom(destCoord);
+                            const override = roomData.exits?.[exit.direction]?.targetRoom;
+                            const destCoord = override ? override.split(',').map(Number) : getAdjacentRoom(playerRoom, exit.direction);
+                            const destRoomData = getRoom(playerArea, destCoord);
 
                             if (destRoomData) {
                                 const destParsed = parseRoom(destRoomData.layout);
