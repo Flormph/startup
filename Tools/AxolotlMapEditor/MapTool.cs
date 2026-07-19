@@ -16,16 +16,41 @@ public enum TileType
     ItemSpawn,
 }
 
+public class TileTag
+{
+    public string? SpriteName { get; set; } = null;
+    public bool HasCollision { get; set; } = false;
+    public bool IsWater { get; set; } = false;
+    public bool IsLava { get; set; } = false;
+    public bool IsIce { get; set; } = false;
+    public bool IsOneWay { get; set; } = false;
+    public Dictionary<string, object> CustomProperties { get; set; } = new Dictionary<string, object>();
+
+    public TileTag() { }
+
+    public TileTag(TileTag other)
+    {
+        SpriteName = other.SpriteName;
+        HasCollision = other.HasCollision;
+        IsWater = other.IsWater;
+        IsLava = other.IsLava;
+        IsIce = other.IsIce;
+        IsOneWay = other.IsOneWay;
+        CustomProperties = new Dictionary<string, object>(other.CustomProperties);
+    }
+}
+
 public struct Tile
 {
-    public TileType Type;
-    public int? TeleportId; // Optional teleport ID for teleport tiles
-    public int? ExitOverride; // Optional exit Direction for exit tiles
-    public int? EnemyId; // Optional enemy ID for enemy spawn tiles
-    public int? ItemId; // Optional item ID for item spawn tiles
-    public int? PlayerSpawnId; // Optional player spawn ID for player spawn tiles
-    public int? TileWidth; // Optional width for tiles that need it
-    public int? TileHeight; // Optional height for tiles that need it
+    public TileType Type { get; set; }
+    public int? TeleportId { get; set; } // Optional teleport ID for teleport tiles
+    public int? ExitOverride { get; set; } // Optional exit Direction for exit tiles
+    public int? EnemyId { get; set; } // Optional enemy ID for enemy spawn tiles
+    public int? ItemId { get; set; } // Optional item ID for item spawn tiles
+    public int? PlayerSpawnId { get; set; } // Optional player spawn ID for player spawn tiles
+    public int? TileWidth { get; set; } // Optional width for tiles that need it
+    public int? TileHeight { get; set; } // Optional height for tiles that need it
+    public TileTag Tag { get; set; } // Tile tag for sprites and physical properties
 
     public Tile(TileType type, int? teleportId = null, int? exitOverride = null, int? enemyId = null, int? itemId = null, int? playerSpawnId = null, int? tileWidth = 1, int? tileHeight = 1)
     {
@@ -37,6 +62,7 @@ public struct Tile
         PlayerSpawnId = null;
         TileWidth = 1;
         TileHeight = 1;
+        Tag = new TileTag();
 
         switch (type)
         {
@@ -117,6 +143,13 @@ public class RoomData //Represents the data for a room in the map editor
     public List<TeleportData> Teleports { get; set; } = new List<TeleportData>(); // List of teleports in the room
     public string? Music { get; set; } = null; // Music track for the room
 
+    // ID tracking for auto-incrementing
+    public int NextPlayerSpawnId { get; set; } = 0;
+    public int NextEnemySpawnId { get; set; } = 0;
+    public int NextItemSpawnId { get; set; } = 0;
+    public int NextTeleportId { get; set; } = 0;
+    public int NextExitOverrideId { get; set; } = 0;
+
     public RoomData(int width, int height) // Constructor to initialize the room data with specified width and height
     {
         Width = width;
@@ -130,6 +163,31 @@ public class RoomData //Represents the data for a room in the map editor
                 Tiles[y][x] = new Tile(TileType.Empty);
             }
         }
+    }
+
+    public int GetNextPlayerSpawnId()
+    {
+        return NextPlayerSpawnId++;
+    }
+
+    public int GetNextEnemySpawnId()
+    {
+        return NextEnemySpawnId++;
+    }
+
+    public int GetNextItemSpawnId()
+    {
+        return NextItemSpawnId++;
+    }
+
+    public int GetNextTeleportId()
+    {
+        return NextTeleportId++;
+    }
+
+    public int GetNextExitOverrideId()
+    {
+        return NextExitOverrideId++;
     }
 }
 

@@ -10,6 +10,7 @@ public enum DrawingTool
     Rectangle,
     Fill,
     Eraser,
+    Select,
 }
 
 public partial class Form1 : Form
@@ -24,6 +25,9 @@ public partial class Form1 : Form
     private string currentAreaKey;
     private string currentRoomKey;
     private string? currentProjectPath = null; // Path to the current project file, if any
+    private static readonly string SettingsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "AxolotlMapEditor", "settings.txt");
 
     private TileType selectedTileType = TileType.Wall;
     private DrawingTool currentTool = DrawingTool.Pencil;
@@ -33,6 +37,7 @@ public partial class Form1 : Form
     private bool isDrawing = false;
     private Point lastDrawnCell = new Point(-1, -1);
     private Point rectangleStartCell = new Point(-1, -1);
+    private Point selectedTileCell = new Point(-1, -1); // For select tool
 
     // Undo/Redo system
     private Stack<RoomData> undoStack = new Stack<RoomData>();
@@ -68,6 +73,42 @@ public partial class Form1 : Form
         BuildLayout();
         BuildMenuBar();
         UpdateToolStatus();
+
+        // Auto-open most recent project
+        this.Load += (s, e) => TryLoadRecentProject();
+    }
+
+    private void TryLoadRecentProject()
+    {
+        try
+        {
+            if (!File.Exists(SettingsPath)) return;
+            string lastPath = File.ReadAllText(SettingsPath).Trim();
+            if (!File.Exists(lastPath)) return;
+
+            currentGame = ProjectFile.Load(lastPath);
+            currentAreaKey = currentGame.Areas.Keys.First();
+            currentRoomKey = currentGame.Areas[currentAreaKey].Rooms.Keys.First();
+            currentProjectPath = lastPath;
+
+            undoStack.Clear();
+            redoStack.Clear();
+            RefreshAreaComboBox();
+            RefreshRoomComboBox();
+            gridPanel.Invalidate();
+            this.Text = $"Axolotl Map Editor - {Path.GetFileName(lastPath)}";
+        }
+        catch { /* silently ignore if anything goes wrong */ }
+    }
+
+    private void SaveRecentProject(string path)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+            File.WriteAllText(SettingsPath, path);
+        }
+        catch { }
     }
 
     private int CellSize => BaseCellSize * zoomLevel;
@@ -78,6 +119,7 @@ public partial class Form1 : Form
         else if (e.KeyCode == Keys.R) { currentTool = DrawingTool.Rectangle; UpdateToolStatus(); e.Handled = true; }
         else if (e.KeyCode == Keys.F) { currentTool = DrawingTool.Fill; UpdateToolStatus(); e.Handled = true; }
         else if (e.KeyCode == Keys.E) { currentTool = DrawingTool.Eraser; UpdateToolStatus(); e.Handled = true; }
+        else if (e.KeyCode == Keys.S) { currentTool = DrawingTool.Select; UpdateToolStatus(); e.Handled = true; }
         else if (e.KeyCode == Keys.Z && e.Control) { Undo(); e.Handled = true; }
         else if (e.KeyCode == Keys.Y && e.Control) { Redo(); e.Handled = true; }
         else if (e.KeyCode == Keys.Add) { ZoomIn(); e.Handled = true; }
@@ -151,10 +193,13 @@ public partial class Form1 : Form
         fillItem.Click += (s, e) => { currentTool = DrawingTool.Fill; UpdateToolStatus(); };
         var eraserItem = new ToolStripMenuItem("Eraser (E)");
         eraserItem.Click += (s, e) => { currentTool = DrawingTool.Eraser; UpdateToolStatus(); };
+        var selectItem = new ToolStripMenuItem("Select (S)");
+        selectItem.Click += (s, e) => { currentTool = DrawingTool.Select; UpdateToolStatus(); };
         toolsMenu.DropDownItems.Add(pencilItem);
         toolsMenu.DropDownItems.Add(rectItem);
         toolsMenu.DropDownItems.Add(fillItem);
         toolsMenu.DropDownItems.Add(eraserItem);
+        toolsMenu.DropDownItems.Add(selectItem);
 
         menuStrip.Items.Add(fileMenu);
         menuStrip.Items.Add(editMenu);
@@ -178,7 +223,11 @@ public partial class Form1 : Form
         currentRoomKey = "0,0";
         currentProjectPath = null; // Reset the project path
 
-        this.Invalidate(); // Redraw the form
+        undoStack.Clear();
+        redoStack.Clear();
+        RefreshAreaComboBox();
+        RefreshRoomComboBox();
+        gridPanel.Invalidate();
     }
 
     private void OpenProject_Click(object? sender, EventArgs e)
@@ -195,8 +244,14 @@ public partial class Form1 : Form
         currentAreaKey = currentGame.Areas.Keys.First();
         currentRoomKey = currentGame.Areas[currentAreaKey].Rooms.Keys.First();
         currentProjectPath = dialog.FileName; // Store the path of the opened project
+        SaveRecentProject(dialog.FileName);
+        this.Text = $"Axolotl Map Editor - {Path.GetFileName(dialog.FileName)}";
 
-        this.Invalidate(); // Redraw the form
+        undoStack.Clear();
+        redoStack.Clear();
+        RefreshAreaComboBox();
+        RefreshRoomComboBox();
+        gridPanel.Invalidate();
     }
 
     private void SaveProject_Click(object? sender, EventArgs e)
@@ -222,6 +277,8 @@ public partial class Form1 : Form
 
         currentProjectPath = dialog.FileName;
         ProjectFile.Save(currentGame, currentProjectPath);
+        SaveRecentProject(currentProjectPath);
+        this.Text = $"Axolotl Map Editor - {Path.GetFileName(currentProjectPath)}";
     }
 
     private void BuildLayout()
@@ -281,14 +338,14 @@ public partial class Form1 : Form
         panel.Controls.Add(toolsLabel);
         y += 25;
 
-        var tools = new[] { ("Pencil (P)", DrawingTool.Pencil), ("Rectangle (R)", DrawingTool.Rectangle), ("Fill (F)", DrawingTool.Fill), ("Eraser (E)", DrawingTool.Eraser) };
+        var tools = new[] { ("Pencil (P)", DrawingTool.Pencil), ("Rectangle (R)", DrawingTool.Rectangle), ("Fill (F)", DrawingTool.Fill), ("Eraser (E)", DrawingTool.Eraser), ("Select (S)", DrawingTool.Select) };
         foreach (var (label, tool) in tools)
         {
             var button = new Button
             {
                 Text = label,
                 Location = new Point(5, y),
-                Size = new Size(105, 28),
+                Size = new Size(120, 28),
                 Tag = tool,
             };
             button.Click += ToolButton_Click;
@@ -316,7 +373,7 @@ public partial class Form1 : Form
             {
                 Text = type.ToString(),
                 Location = new Point(5, y),
-                Size = new Size(90, 28),
+                Size = new Size(115, 28),
                 Tag = type,
             };
             button.Click += PaletteButton_Click;
@@ -338,7 +395,7 @@ public partial class Form1 : Form
             {
                 Text = label,
                 Location = new Point(5, y),
-                Size = new Size(105, 28),
+                Size = new Size(120, 28),
                 Tag = template,
             };
             button.Click += TemplateButton_Click;
@@ -383,6 +440,7 @@ public partial class Form1 : Form
             DrawingTool.Rectangle => "Rectangle",
             DrawingTool.Fill => "Fill",
             DrawingTool.Eraser => "Eraser",
+            DrawingTool.Select => "Select",
             _ => "Unknown"
         };
 
@@ -491,6 +549,12 @@ public partial class Form1 : Form
                 var rect = new Rectangle(x * cellSize + panX, y * cellSize + panY, cellSize, cellSize);
                 g.FillRectangle(new SolidBrush(GetColorForTile(tile.Type)), rect);
                 g.DrawRectangle(Pens.Gray, rect);
+
+                // Highlight selected tile
+                if (currentTool == DrawingTool.Select && selectedTileCell.X == x && selectedTileCell.Y == y)
+                {
+                    g.DrawRectangle(new Pen(Color.Blue, 3), rect);
+                }
             }
         }
     }
@@ -504,22 +568,31 @@ public partial class Form1 : Form
 
         if (cell.X < 0 || cell.X >= GridWidth || cell.Y < 0 || cell.Y >= GridHeight) return;
 
-        SaveUndo();
-
-        if (currentTool == DrawingTool.Rectangle)
+        if (currentTool == DrawingTool.Select)
         {
-            rectangleStartCell = cell;
-        }
-        else if (currentTool == DrawingTool.Fill)
-        {
-            FloodFill(cell.X, cell.Y);
+            selectedTileCell = cell;
+            ShowTilePropertiesDialog(cell.X, cell.Y);
             gridPanel.Invalidate();
         }
         else
         {
-            PlaceOrErase(cell.X, cell.Y);
-            lastDrawnCell = cell;
-            gridPanel.Invalidate();
+            SaveUndo();
+
+            if (currentTool == DrawingTool.Rectangle)
+            {
+                rectangleStartCell = cell;
+            }
+            else if (currentTool == DrawingTool.Fill)
+            {
+                FloodFill(cell.X, cell.Y);
+                gridPanel.Invalidate();
+            }
+            else
+            {
+                PlaceOrErase(cell.X, cell.Y);
+                lastDrawnCell = cell;
+                gridPanel.Invalidate();
+            }
         }
     }
 
@@ -561,10 +634,23 @@ public partial class Form1 : Form
 
     private void GridPanel_MouseWheel(object? sender, MouseEventArgs e)
     {
+        // Ctrl+Scroll to zoom
         if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
         {
             if (e.Delta > 0) ZoomIn();
             else ZoomOut();
+        }
+        // Shift+Scroll to pan horizontally
+        else if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+        {
+            panX += (e.Delta > 0) ? 20 : -20;
+            gridPanel.Invalidate();
+        }
+        // Regular Scroll to pan vertically
+        else
+        {
+            panY += (e.Delta > 0) ? 20 : -20;
+            gridPanel.Invalidate();
         }
     }
 
@@ -577,11 +663,40 @@ public partial class Form1 : Form
     {
         if (x < 0 || x >= GridWidth || y < 0 || y >= GridHeight) return;
 
-        var tile = currentTool == DrawingTool.Eraser
-            ? new Tile(TileType.Empty)
-            : new Tile(selectedTileType);
+        var room = CurrentRoom;
+        Tile tile;
 
-        CurrentRoom.Tiles[y][x] = tile;
+        if (currentTool == DrawingTool.Eraser)
+        {
+            tile = new Tile(TileType.Empty);
+        }
+        else
+        {
+            // Auto-assign IDs for spawn tiles
+            switch (selectedTileType)
+            {
+                case TileType.PlayerSpawn:
+                    tile = new Tile(selectedTileType, playerSpawnId: room.GetNextPlayerSpawnId());
+                    break;
+                case TileType.EnemySpawn:
+                    tile = new Tile(selectedTileType, enemyId: room.GetNextEnemySpawnId());
+                    break;
+                case TileType.ItemSpawn:
+                    tile = new Tile(selectedTileType, itemId: room.GetNextItemSpawnId());
+                    break;
+                case TileType.Teleport:
+                    tile = new Tile(selectedTileType, teleportId: room.GetNextTeleportId());
+                    break;
+                case TileType.ExitOverride:
+                    tile = new Tile(selectedTileType, exitOverride: room.GetNextExitOverrideId());
+                    break;
+                default:
+                    tile = new Tile(selectedTileType);
+                    break;
+            }
+        }
+
+        room.Tiles[y][x] = tile;
     }
 
     private void DrawRectangle(int x1, int y1, int x2, int y2)
@@ -591,7 +706,7 @@ public partial class Form1 : Form
         int minY = Math.Min(y1, y2);
         int maxY = Math.Max(y1, y2);
 
-        var tile = new Tile(selectedTileType);
+        var room = CurrentRoom;
 
         for (int y = minY; y <= maxY; y++)
         {
@@ -599,7 +714,17 @@ public partial class Form1 : Form
             {
                 if (x >= 0 && x < GridWidth && y >= 0 && y < GridHeight)
                 {
-                    CurrentRoom.Tiles[y][x] = tile;
+                    // Auto-assign IDs for spawn tiles
+                    Tile tile = selectedTileType switch
+                    {
+                        TileType.PlayerSpawn => new Tile(selectedTileType, playerSpawnId: room.GetNextPlayerSpawnId()),
+                        TileType.EnemySpawn => new Tile(selectedTileType, enemyId: room.GetNextEnemySpawnId()),
+                        TileType.ItemSpawn => new Tile(selectedTileType, itemId: room.GetNextItemSpawnId()),
+                        TileType.Teleport => new Tile(selectedTileType, teleportId: room.GetNextTeleportId()),
+                        TileType.ExitOverride => new Tile(selectedTileType, exitOverride: room.GetNextExitOverrideId()),
+                        _ => new Tile(selectedTileType)
+                    };
+                    room.Tiles[y][x] = tile;
                 }
             }
         }
@@ -677,11 +802,34 @@ public partial class Form1 : Form
         {
             for (int x = 0; x < currentRoom.Width; x++)
             {
-                backup.Tiles[y][x] = new Tile(currentRoom.Tiles[y][x].Type);
+                backup.Tiles[y][x] = CopyTile(currentRoom.Tiles[y][x]);
             }
         }
+        backup.NextPlayerSpawnId = currentRoom.NextPlayerSpawnId;
+        backup.NextEnemySpawnId = currentRoom.NextEnemySpawnId;
+        backup.NextItemSpawnId = currentRoom.NextItemSpawnId;
+        backup.NextTeleportId = currentRoom.NextTeleportId;
+        backup.NextExitOverrideId = currentRoom.NextExitOverrideId;
         undoStack.Push(backup);
         redoStack.Clear();
+    }
+
+    private Tile CopyTile(Tile sourceTile)
+    {
+        // Create a proper copy of the tile with all its data
+        Tile copy = sourceTile.Type switch
+        {
+            TileType.PlayerSpawn => new Tile(sourceTile.Type, playerSpawnId: sourceTile.PlayerSpawnId),
+            TileType.EnemySpawn => new Tile(sourceTile.Type, enemyId: sourceTile.EnemyId),
+            TileType.ItemSpawn => new Tile(sourceTile.Type, itemId: sourceTile.ItemId),
+            TileType.Teleport => new Tile(sourceTile.Type, teleportId: sourceTile.TeleportId),
+            TileType.ExitOverride => new Tile(sourceTile.Type, exitOverride: sourceTile.ExitOverride),
+            _ => new Tile(sourceTile.Type)
+        };
+
+        // Copy the tag (handle null case when loading projects)
+        copy.Tag = sourceTile.Tag != null ? new TileTag(sourceTile.Tag) : new TileTag();
+        return copy;
     }
 
     private void Undo()
@@ -694,9 +842,14 @@ public partial class Form1 : Form
         {
             for (int x = 0; x < currentRoom.Width; x++)
             {
-                backup.Tiles[y][x] = new Tile(currentRoom.Tiles[y][x].Type);
+                backup.Tiles[y][x] = CopyTile(currentRoom.Tiles[y][x]);
             }
         }
+        backup.NextPlayerSpawnId = currentRoom.NextPlayerSpawnId;
+        backup.NextEnemySpawnId = currentRoom.NextEnemySpawnId;
+        backup.NextItemSpawnId = currentRoom.NextItemSpawnId;
+        backup.NextTeleportId = currentRoom.NextTeleportId;
+        backup.NextExitOverrideId = currentRoom.NextExitOverrideId;
         redoStack.Push(backup);
 
         var previousState = undoStack.Pop();
@@ -704,9 +857,14 @@ public partial class Form1 : Form
         {
             for (int x = 0; x < currentRoom.Width; x++)
             {
-                currentRoom.Tiles[y][x] = new Tile(previousState.Tiles[y][x].Type);
+                currentRoom.Tiles[y][x] = CopyTile(previousState.Tiles[y][x]);
             }
         }
+        currentRoom.NextPlayerSpawnId = previousState.NextPlayerSpawnId;
+        currentRoom.NextEnemySpawnId = previousState.NextEnemySpawnId;
+        currentRoom.NextItemSpawnId = previousState.NextItemSpawnId;
+        currentRoom.NextTeleportId = previousState.NextTeleportId;
+        currentRoom.NextExitOverrideId = previousState.NextExitOverrideId;
 
         gridPanel.Invalidate();
     }
@@ -721,9 +879,14 @@ public partial class Form1 : Form
         {
             for (int x = 0; x < currentRoom.Width; x++)
             {
-                backup.Tiles[y][x] = new Tile(currentRoom.Tiles[y][x].Type);
+                backup.Tiles[y][x] = CopyTile(currentRoom.Tiles[y][x]);
             }
         }
+        backup.NextPlayerSpawnId = currentRoom.NextPlayerSpawnId;
+        backup.NextEnemySpawnId = currentRoom.NextEnemySpawnId;
+        backup.NextItemSpawnId = currentRoom.NextItemSpawnId;
+        backup.NextTeleportId = currentRoom.NextTeleportId;
+        backup.NextExitOverrideId = currentRoom.NextExitOverrideId;
         undoStack.Push(backup);
 
         var nextState = redoStack.Pop();
@@ -731,9 +894,14 @@ public partial class Form1 : Form
         {
             for (int x = 0; x < currentRoom.Width; x++)
             {
-                currentRoom.Tiles[y][x] = new Tile(nextState.Tiles[y][x].Type);
+                currentRoom.Tiles[y][x] = CopyTile(nextState.Tiles[y][x]);
             }
         }
+        currentRoom.NextPlayerSpawnId = nextState.NextPlayerSpawnId;
+        currentRoom.NextEnemySpawnId = nextState.NextEnemySpawnId;
+        currentRoom.NextItemSpawnId = nextState.NextItemSpawnId;
+        currentRoom.NextTeleportId = nextState.NextTeleportId;
+        currentRoom.NextExitOverrideId = nextState.NextExitOverrideId;
 
         gridPanel.Invalidate();
     }
@@ -751,6 +919,15 @@ public partial class Form1 : Form
         };
         areaComboBox.SelectedIndexChanged += AreaComboBox_SelectedIndexChanged;
 
+        var addAreaButton = new Button
+        {
+            Text = "+",
+            Location = new Point(165, 40),
+            Width = 50,
+            Height = 40,
+        };
+        addAreaButton.Click += (s, e) => AddNewArea();
+
         var roomLabel = new Label { Text = "Room:", Location = new Point(10, 75), AutoSize = true };
         roomComboBox = new ComboBox
         {
@@ -760,10 +937,21 @@ public partial class Form1 : Form
         };
         roomComboBox.SelectedIndexChanged += RoomComboBox_SelectedIndexChanged;
 
+        var addRoomButton = new Button
+        {
+            Text = "+",
+            Location = new Point(165, 95),
+            Width = 50,
+            Height = 40,
+        };
+        addRoomButton.Click += (s, e) => AddNewRoom();
+
         panel.Controls.Add(areaLabel);
         panel.Controls.Add(areaComboBox);
+        panel.Controls.Add(addAreaButton);
         panel.Controls.Add(roomLabel);
         panel.Controls.Add(roomComboBox);
+        panel.Controls.Add(addRoomButton);
 
         RefreshAreaComboBox();
 
@@ -800,6 +988,123 @@ public partial class Form1 : Form
         if (roomComboBox.SelectedItem is not string selected) return;
         currentRoomKey = selected;
         gridPanel.Invalidate();
+    }
+
+    private void AddNewArea()
+    {
+        var dialog = new Form
+        {
+            Text = "New Area",
+            Width = 340,
+            Height = 200,
+            StartPosition = FormStartPosition.CenterParent,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false,
+        };
+
+        var label = new Label { Text = "Area Name:", Location = new Point(10, 10), AutoSize = true };
+        var textBox = new TextBox { Text = "Area " + (currentGame.Areas.Count + 1), Location = new Point(10, 35), Width = 300 };
+        var okButton = new Button { Text = "OK", Location = new Point(170, 130), Width = 70, DialogResult = DialogResult.OK };
+        var cancelButton = new Button { Text = "Cancel", Location = new Point(250, 130), Width = 70, DialogResult = DialogResult.Cancel };
+
+        dialog.Controls.Add(label);
+        dialog.Controls.Add(textBox);
+        dialog.Controls.Add(okButton);
+        dialog.Controls.Add(cancelButton);
+        dialog.AcceptButton = okButton;
+        dialog.CancelButton = cancelButton;
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            string areaName = textBox.Text.Trim();
+            if (string.IsNullOrEmpty(areaName))
+            {
+                MessageBox.Show("Area name cannot be empty!", "Error");
+                return;
+            }
+
+            if (currentGame.Areas.ContainsKey(areaName))
+            {
+                MessageBox.Show("An area with this name already exists!", "Error");
+                return;
+            }
+
+            // Create new area with a starting room
+            var newArea = new AreaData { Name = areaName };
+            var newRoom = new RoomData(GridWidth, GridHeight);
+            newArea.Rooms["0,0"] = newRoom;
+            currentGame.Areas[areaName] = newArea;
+
+            // Switch to the new area
+            currentAreaKey = areaName;
+            currentRoomKey = "0,0";
+            RefreshAreaComboBox();
+            RefreshRoomComboBox();
+            gridPanel.Invalidate();
+
+            MessageBox.Show($"Area '{areaName}' created!", "Success");
+        }
+    }
+
+    private void AddNewRoom()
+    {
+        var dialog = new Form
+        {
+            Text = "New Room",
+            Width = 340,
+            Height = 240,
+            StartPosition = FormStartPosition.CenterParent,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false,
+        };
+
+        var label = new Label { Text = "Room Coordinates (x,y):", Location = new Point(10, 10), AutoSize = true };
+        var xLabel = new Label { Text = "X:", Location = new Point(10, 45), AutoSize = true };
+        var xTextBox = new TextBox { Text = "1", Location = new Point(30, 42), Width = 50 };
+        var yLabel = new Label { Text = "Y:", Location = new Point(100, 45), AutoSize = true };
+        var yTextBox = new TextBox { Text = "0", Location = new Point(120, 42), Width = 50 };
+
+        var okButton = new Button { Text = "OK", Location = new Point(170, 165), Width = 70, DialogResult = DialogResult.OK };
+        var cancelButton = new Button { Text = "Cancel", Location = new Point(250, 165), Width = 70, DialogResult = DialogResult.Cancel };
+
+        dialog.Controls.Add(label);
+        dialog.Controls.Add(xLabel);
+        dialog.Controls.Add(xTextBox);
+        dialog.Controls.Add(yLabel);
+        dialog.Controls.Add(yTextBox);
+        dialog.Controls.Add(okButton);
+        dialog.Controls.Add(cancelButton);
+        dialog.AcceptButton = okButton;
+        dialog.CancelButton = cancelButton;
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            if (!int.TryParse(xTextBox.Text, out int x) || !int.TryParse(yTextBox.Text, out int y))
+            {
+                MessageBox.Show("X and Y must be integers!", "Error");
+                return;
+            }
+
+            string roomKey = $"{x},{y}";
+            if (currentGame.Areas[currentAreaKey].Rooms.ContainsKey(roomKey))
+            {
+                MessageBox.Show($"Room {roomKey} already exists in this area!", "Error");
+                return;
+            }
+
+            // Create new room
+            var newRoom = new RoomData(GridWidth, GridHeight);
+            currentGame.Areas[currentAreaKey].Rooms[roomKey] = newRoom;
+
+            // Switch to the new room
+            currentRoomKey = roomKey;
+            RefreshRoomComboBox();
+            gridPanel.Invalidate();
+
+            MessageBox.Show($"Room {roomKey} created!", "Success");
+        }
     }
 
     private RoomData CurrentRoom => currentGame.Areas[currentAreaKey].Rooms[currentRoomKey];
@@ -840,6 +1145,167 @@ public partial class Form1 : Form
 
         BatchExporter.ExportGameMap(currentGame, exporter, folderDialog.SelectedPath);
         MessageBox.Show("Game exported!", "Export");
+    }
+
+    private void ShowTilePropertiesDialog(int x, int y)
+    {
+        var tile = CurrentRoom.Tiles[y][x];
+
+        var dialog = new Form
+        {
+            Text = $"Tile Properties ({x}, {y})",
+            Width = 400,
+            Height = 500,
+            StartPosition = FormStartPosition.CenterParent,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false,
+        };
+
+        int controlY = 10;
+
+        // Tile Type
+        var typeLabel = new Label { Text = "Tile Type:", Location = new Point(10, controlY), AutoSize = true };
+        dialog.Controls.Add(typeLabel);
+        controlY += 25;
+
+        var typeCombo = new ComboBox
+        {
+            Location = new Point(10, controlY),
+            Width = 360,
+            DropDownStyle = ComboBoxStyle.DropDownList,
+        };
+
+        foreach (TileType tileType in Enum.GetValues(typeof(TileType)))
+        {
+            typeCombo.Items.Add(tileType.ToString());
+        }
+        typeCombo.SelectedItem = tile.Type.ToString();
+        dialog.Controls.Add(typeCombo);
+        controlY += 35;
+
+        // ID fields (only show for spawn types)
+        Label? idLabel = null;
+        TextBox? idBox = null;
+
+        if (tile.Type == TileType.PlayerSpawn && tile.PlayerSpawnId.HasValue)
+        {
+            idLabel = new Label { Text = "Player Spawn ID:", Location = new Point(10, controlY), AutoSize = true };
+            dialog.Controls.Add(idLabel);
+            controlY += 25;
+
+            idBox = new TextBox { Text = tile.PlayerSpawnId.ToString(), Location = new Point(10, controlY), Width = 360, ReadOnly = true };
+            dialog.Controls.Add(idBox);
+            controlY += 35;
+        }
+        else if (tile.Type == TileType.EnemySpawn && tile.EnemyId.HasValue)
+        {
+            idLabel = new Label { Text = "Enemy ID:", Location = new Point(10, controlY), AutoSize = true };
+            dialog.Controls.Add(idLabel);
+            controlY += 25;
+
+            idBox = new TextBox { Text = tile.EnemyId.ToString(), Location = new Point(10, controlY), Width = 360, ReadOnly = true };
+            dialog.Controls.Add(idBox);
+            controlY += 35;
+        }
+        else if (tile.Type == TileType.ItemSpawn && tile.ItemId.HasValue)
+        {
+            idLabel = new Label { Text = "Item ID:", Location = new Point(10, controlY), AutoSize = true };
+            dialog.Controls.Add(idLabel);
+            controlY += 25;
+
+            idBox = new TextBox { Text = tile.ItemId.ToString(), Location = new Point(10, controlY), Width = 360, ReadOnly = true };
+            dialog.Controls.Add(idBox);
+            controlY += 35;
+        }
+        else if (tile.Type == TileType.Teleport && tile.TeleportId.HasValue)
+        {
+            idLabel = new Label { Text = "Teleport ID:", Location = new Point(10, controlY), AutoSize = true };
+            dialog.Controls.Add(idLabel);
+            controlY += 25;
+
+            idBox = new TextBox { Text = tile.TeleportId.ToString(), Location = new Point(10, controlY), Width = 360, ReadOnly = true };
+            dialog.Controls.Add(idBox);
+            controlY += 35;
+        }
+
+        // Tile Tag - Sprite Name
+        var spriteLabel = new Label { Text = "Sprite Name:", Location = new Point(10, controlY), AutoSize = true };
+        dialog.Controls.Add(spriteLabel);
+        controlY += 25;
+
+        var spriteBox = new TextBox
+        {
+            Text = tile.Tag.SpriteName ?? "",
+            Location = new Point(10, controlY),
+            Width = 360,
+        };
+        dialog.Controls.Add(spriteBox);
+        controlY += 35;
+
+        // Tile Tag - Physical Properties
+        var collisionCheck = new CheckBox { Text = "Has Collision", Location = new Point(10, controlY), AutoSize = true, Checked = tile.Tag.HasCollision };
+        dialog.Controls.Add(collisionCheck);
+        controlY += 25;
+
+        var waterCheck = new CheckBox { Text = "Is Water", Location = new Point(10, controlY), AutoSize = true, Checked = tile.Tag.IsWater };
+        dialog.Controls.Add(waterCheck);
+        controlY += 25;
+
+        var lavaCheck = new CheckBox { Text = "Is Lava", Location = new Point(10, controlY), AutoSize = true, Checked = tile.Tag.IsLava };
+        dialog.Controls.Add(lavaCheck);
+        controlY += 25;
+
+        var iceCheck = new CheckBox { Text = "Is Ice", Location = new Point(10, controlY), AutoSize = true, Checked = tile.Tag.IsIce };
+        dialog.Controls.Add(iceCheck);
+        controlY += 25;
+
+        var oneWayCheck = new CheckBox { Text = "Is One-Way", Location = new Point(10, controlY), AutoSize = true, Checked = tile.Tag.IsOneWay };
+        dialog.Controls.Add(oneWayCheck);
+        controlY += 35;
+
+        // Buttons
+        var okButton = new Button { Text = "OK", Location = new Point(220, controlY), Width = 80, DialogResult = DialogResult.OK };
+        var cancelButton = new Button { Text = "Cancel", Location = new Point(310, controlY), Width = 80, DialogResult = DialogResult.Cancel };
+
+        dialog.Controls.Add(okButton);
+        dialog.Controls.Add(cancelButton);
+        dialog.AcceptButton = okButton;
+        dialog.CancelButton = cancelButton;
+
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            SaveUndo();
+
+            // Create new tile with proper ID assignment based on type
+            if (Enum.TryParse<TileType>(typeCombo.SelectedItem?.ToString(), out var newType))
+            {
+                Tile newTile = newType switch
+                {
+                    TileType.PlayerSpawn => new Tile(newType, playerSpawnId: tile.PlayerSpawnId ?? CurrentRoom.GetNextPlayerSpawnId()),
+                    TileType.EnemySpawn => new Tile(newType, enemyId: tile.EnemyId ?? CurrentRoom.GetNextEnemySpawnId()),
+                    TileType.ItemSpawn => new Tile(newType, itemId: tile.ItemId ?? CurrentRoom.GetNextItemSpawnId()),
+                    TileType.Teleport => new Tile(newType, teleportId: tile.TeleportId ?? CurrentRoom.GetNextTeleportId()),
+                    TileType.ExitOverride => new Tile(newType, exitOverride: tile.ExitOverride ?? CurrentRoom.GetNextExitOverrideId()),
+                    _ => new Tile(newType)
+                };
+
+                // Copy the tag from the old tile
+                newTile.Tag = new TileTag(tile.Tag);
+
+                // Update tag properties
+                newTile.Tag.SpriteName = string.IsNullOrWhiteSpace(spriteBox.Text) ? null : spriteBox.Text;
+                newTile.Tag.HasCollision = collisionCheck.Checked;
+                newTile.Tag.IsWater = waterCheck.Checked;
+                newTile.Tag.IsLava = lavaCheck.Checked;
+                newTile.Tag.IsIce = iceCheck.Checked;
+                newTile.Tag.IsOneWay = oneWayCheck.Checked;
+
+                CurrentRoom.Tiles[y][x] = newTile;
+            }
+
+            gridPanel.Invalidate();
+        }
     }
 
     private Color GetColorForTile(TileType type)
