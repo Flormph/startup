@@ -39,9 +39,14 @@ public partial class Form1 : Form
     private Point rectangleStartCell = new Point(-1, -1);
     private Point selectedTileCell = new Point(-1, -1); // For select tool
 
-    // Undo/Redo system
-    private Stack<RoomData> undoStack = new Stack<RoomData>();
-    private Stack<RoomData> redoStack = new Stack<RoomData>();
+    // Undo/Redo system — area-level snapshots
+    private record AreaSnapshot(Dictionary<string, RoomData> Rooms, string ActiveRoomKey);
+    private Stack<AreaSnapshot> undoStack = new Stack<AreaSnapshot>();
+    private Stack<AreaSnapshot> redoStack = new Stack<AreaSnapshot>();
+
+    private bool isPanning = false;
+    private Point panStartMouse = Point.Empty;
+    private int panStartX, panStartY;
 
     private readonly List<IMapExporter> exporters = new List<IMapExporter>
     {
@@ -50,6 +55,7 @@ public partial class Form1 : Form
     };
 
     private Panel gridPanel = null!;
+    private Panel minimapPanel = null!;
     private ComboBox areaComboBox = null!;
     private ComboBox roomComboBox = null!;
     private Label toolStatusLabel = null!;
@@ -65,7 +71,7 @@ public partial class Form1 : Form
         currentRoomKey = "0,0";
 
         this.Text = "Axolotl Map Editor";
-        this.ClientSize = new Size(1200, 800);
+        this.ClientSize = new Size(1600, 950);
         this.DoubleBuffered = true; // Reduce flickering
         this.KeyPreview = true;
         this.KeyDown += Form1_KeyDown;
@@ -112,6 +118,13 @@ public partial class Form1 : Form
     }
 
     private int CellSize => BaseCellSize * zoomLevel;
+
+    private static void SetDoubleBuffered(Control control)
+    {
+        typeof(Control).GetProperty("DoubleBuffered",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            ?.SetValue(control, true);
+    }
 
     private void Form1_KeyDown(object? sender, KeyEventArgs e)
     {
@@ -304,6 +317,7 @@ public partial class Form1 : Form
         leftSplit.Panel1.Controls.Add(BuildPalettePanel());
 
         gridPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, AutoScroll = true };
+        SetDoubleBuffered(gridPanel);
         gridPanel.Paint += GridPanel_Paint;
         gridPanel.MouseDown += GridPanel_MouseDown;
         gridPanel.MouseMove += GridPanel_MouseMove;
@@ -311,7 +325,18 @@ public partial class Form1 : Form
         gridPanel.MouseWheel += GridPanel_MouseWheel;
         rightSplit.Panel1.Controls.Add(gridPanel);
 
-        rightSplit.Panel2.Controls.Add(BuildAreasRoomsPanel());
+        // Minimap sits below the areas/rooms panel in the right split
+        var areasRoomsAndMinimap = new Panel { Dock = DockStyle.Fill };
+        var areasRoomsPanel = BuildAreasRoomsPanel();
+        areasRoomsPanel.Dock = DockStyle.Top;
+        areasRoomsPanel.Height = 190;
+        minimapPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(30, 30, 30) };
+        SetDoubleBuffered(minimapPanel);
+        minimapPanel.Paint += MinimapPanel_Paint;
+        minimapPanel.MouseClick += MinimapPanel_MouseClick;
+        areasRoomsAndMinimap.Controls.Add(minimapPanel);
+        areasRoomsAndMinimap.Controls.Add(areasRoomsPanel);
+        rightSplit.Panel2.Controls.Add(areasRoomsAndMinimap);
 
         leftSplit.Panel2.Controls.Add(rightSplit);
 
@@ -322,8 +347,8 @@ public partial class Form1 : Form
         this.Load += (s, e) =>
         {
             leftSplit.SplitterDistance = 160;
-            rightSplit.SplitterDistance = Math.Max(rightSplit.Panel1MinSize, rightSplit.Width - 200);
-            verticalSplit.SplitterDistance = 500;
+            rightSplit.SplitterDistance = Math.Max(rightSplit.Panel1MinSize, rightSplit.Width - 240);
+            verticalSplit.SplitterDistance = Math.Max(300, this.ClientSize.Height - 120);
         };
     }
 
@@ -561,6 +586,16 @@ public partial class Form1 : Form
 
     private void GridPanel_MouseDown(object? sender, MouseEventArgs e)
     {
+        if (e.Button == MouseButtons.Middle)
+        {
+            isPanning = true;
+            panStartMouse = e.Location;
+            panStartX = panX;
+            panStartY = panY;
+            gridPanel.Cursor = Cursors.SizeAll;
+            return;
+        }
+
         if (e.Button != MouseButtons.Left) return;
 
         isDrawing = true;
@@ -598,6 +633,14 @@ public partial class Form1 : Form
 
     private void GridPanel_MouseMove(object? sender, MouseEventArgs e)
     {
+        if (isPanning)
+        {
+            panX = panStartX + (e.X - panStartMouse.X);
+            panY = panStartY + (e.Y - panStartMouse.Y);
+            gridPanel.Invalidate();
+            return;
+        }
+
         if (!isDrawing) return;
 
         Point cell = ScreenToGridCoordinates(e.X, e.Y);
@@ -617,6 +660,13 @@ public partial class Form1 : Form
 
     private void GridPanel_MouseUp(object? sender, MouseEventArgs e)
     {
+        if (e.Button == MouseButtons.Middle)
+        {
+            isPanning = false;
+            gridPanel.Cursor = Cursors.Default;
+            return;
+        }
+
         if (currentTool == DrawingTool.Rectangle && rectangleStartCell.X >= 0)
         {
             Point endCell = ScreenToGridCoordinates(e.X, e.Y);
@@ -795,23 +845,30 @@ public partial class Form1 : Form
 
     private void SaveUndo()
     {
-        // Deep copy the current room state
-        var currentRoom = CurrentRoom;
-        var backup = new RoomData(currentRoom.Width, currentRoom.Height);
-        for (int y = 0; y < currentRoom.Height; y++)
-        {
-            for (int x = 0; x < currentRoom.Width; x++)
-            {
-                backup.Tiles[y][x] = CopyTile(currentRoom.Tiles[y][x]);
-            }
-        }
-        backup.NextPlayerSpawnId = currentRoom.NextPlayerSpawnId;
-        backup.NextEnemySpawnId = currentRoom.NextEnemySpawnId;
-        backup.NextItemSpawnId = currentRoom.NextItemSpawnId;
-        backup.NextTeleportId = currentRoom.NextTeleportId;
-        backup.NextExitOverrideId = currentRoom.NextExitOverrideId;
-        undoStack.Push(backup);
+        undoStack.Push(SnapshotArea());
         redoStack.Clear();
+    }
+
+    private AreaSnapshot SnapshotArea()
+    {
+        var copy = new Dictionary<string, RoomData>();
+        foreach (var kv in currentGame.Areas[currentAreaKey].Rooms)
+            copy[kv.Key] = CopyRoomData(kv.Value);
+        return new AreaSnapshot(copy, currentRoomKey);
+    }
+
+    private RoomData CopyRoomData(RoomData src)
+    {
+        var copy = new RoomData(src.Width, src.Height);
+        for (int y = 0; y < src.Height; y++)
+            for (int x = 0; x < src.Width; x++)
+                copy.Tiles[y][x] = CopyTile(src.Tiles[y][x]);
+        copy.NextPlayerSpawnId = src.NextPlayerSpawnId;
+        copy.NextEnemySpawnId = src.NextEnemySpawnId;
+        copy.NextItemSpawnId = src.NextItemSpawnId;
+        copy.NextTeleportId = src.NextTeleportId;
+        copy.NextExitOverrideId = src.NextExitOverrideId;
+        return copy;
     }
 
     private Tile CopyTile(Tile sourceTile)
@@ -835,74 +892,25 @@ public partial class Form1 : Form
     private void Undo()
     {
         if (undoStack.Count == 0) return;
-
-        var currentRoom = CurrentRoom;
-        var backup = new RoomData(currentRoom.Width, currentRoom.Height);
-        for (int y = 0; y < currentRoom.Height; y++)
-        {
-            for (int x = 0; x < currentRoom.Width; x++)
-            {
-                backup.Tiles[y][x] = CopyTile(currentRoom.Tiles[y][x]);
-            }
-        }
-        backup.NextPlayerSpawnId = currentRoom.NextPlayerSpawnId;
-        backup.NextEnemySpawnId = currentRoom.NextEnemySpawnId;
-        backup.NextItemSpawnId = currentRoom.NextItemSpawnId;
-        backup.NextTeleportId = currentRoom.NextTeleportId;
-        backup.NextExitOverrideId = currentRoom.NextExitOverrideId;
-        redoStack.Push(backup);
-
-        var previousState = undoStack.Pop();
-        for (int y = 0; y < currentRoom.Height; y++)
-        {
-            for (int x = 0; x < currentRoom.Width; x++)
-            {
-                currentRoom.Tiles[y][x] = CopyTile(previousState.Tiles[y][x]);
-            }
-        }
-        currentRoom.NextPlayerSpawnId = previousState.NextPlayerSpawnId;
-        currentRoom.NextEnemySpawnId = previousState.NextEnemySpawnId;
-        currentRoom.NextItemSpawnId = previousState.NextItemSpawnId;
-        currentRoom.NextTeleportId = previousState.NextTeleportId;
-        currentRoom.NextExitOverrideId = previousState.NextExitOverrideId;
-
-        gridPanel.Invalidate();
+        redoStack.Push(SnapshotArea());
+        RestoreSnapshot(undoStack.Pop());
     }
 
     private void Redo()
     {
         if (redoStack.Count == 0) return;
+        undoStack.Push(SnapshotArea());
+        RestoreSnapshot(redoStack.Pop());
+    }
 
-        var currentRoom = CurrentRoom;
-        var backup = new RoomData(currentRoom.Width, currentRoom.Height);
-        for (int y = 0; y < currentRoom.Height; y++)
-        {
-            for (int x = 0; x < currentRoom.Width; x++)
-            {
-                backup.Tiles[y][x] = CopyTile(currentRoom.Tiles[y][x]);
-            }
-        }
-        backup.NextPlayerSpawnId = currentRoom.NextPlayerSpawnId;
-        backup.NextEnemySpawnId = currentRoom.NextEnemySpawnId;
-        backup.NextItemSpawnId = currentRoom.NextItemSpawnId;
-        backup.NextTeleportId = currentRoom.NextTeleportId;
-        backup.NextExitOverrideId = currentRoom.NextExitOverrideId;
-        undoStack.Push(backup);
-
-        var nextState = redoStack.Pop();
-        for (int y = 0; y < currentRoom.Height; y++)
-        {
-            for (int x = 0; x < currentRoom.Width; x++)
-            {
-                currentRoom.Tiles[y][x] = CopyTile(nextState.Tiles[y][x]);
-            }
-        }
-        currentRoom.NextPlayerSpawnId = nextState.NextPlayerSpawnId;
-        currentRoom.NextEnemySpawnId = nextState.NextEnemySpawnId;
-        currentRoom.NextItemSpawnId = nextState.NextItemSpawnId;
-        currentRoom.NextTeleportId = nextState.NextTeleportId;
-        currentRoom.NextExitOverrideId = nextState.NextExitOverrideId;
-
+    private void RestoreSnapshot(AreaSnapshot snap)
+    {
+        currentGame.Areas[currentAreaKey].Rooms.Clear();
+        foreach (var kv in snap.Rooms)
+            currentGame.Areas[currentAreaKey].Rooms[kv.Key] = kv.Value;
+        currentRoomKey = snap.ActiveRoomKey;
+        RefreshRoomComboBox();
+        minimapPanel?.Invalidate();
         gridPanel.Invalidate();
     }
 
@@ -946,16 +954,268 @@ public partial class Form1 : Form
         };
         addRoomButton.Click += (s, e) => AddNewRoom();
 
+        var deleteRoomButton = new Button
+        {
+            Text = "Del Room",
+            Location = new Point(10, 140),
+            Width = 100,
+            Height = 28,
+            ForeColor = Color.Firebrick,
+        };
+        deleteRoomButton.Click += (s, e) => DeleteCurrentRoom();
+
         panel.Controls.Add(areaLabel);
         panel.Controls.Add(areaComboBox);
         panel.Controls.Add(addAreaButton);
         panel.Controls.Add(roomLabel);
         panel.Controls.Add(roomComboBox);
         panel.Controls.Add(addRoomButton);
+        panel.Controls.Add(deleteRoomButton);
 
         RefreshAreaComboBox();
 
         return panel;
+    }
+
+    private void DeleteCurrentRoom()
+    {
+        var rooms = currentGame.Areas[currentAreaKey].Rooms;
+        if (rooms.Count <= 1)
+        {
+            MessageBox.Show("Cannot delete the last room in an area.", "Delete Room");
+            return;
+        }
+
+        var result = MessageBox.Show(
+            $"Delete room '{currentRoomKey}'? This cannot be undone past this point.",
+            "Delete Room",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning);
+        if (result != DialogResult.Yes) return;
+
+        SaveUndo();
+        rooms.Remove(currentRoomKey);
+        currentRoomKey = rooms.Keys.First();
+        RefreshRoomComboBox();
+        minimapPanel?.Invalidate();
+        gridPanel.Invalidate();
+    }
+
+    // ── Minimap ────────────────────────────────────────────────────────────────
+
+    private void RefreshMinimap() => minimapPanel?.Invalidate();
+
+    private (int minX, int minY, int maxX, int maxY) GetAreaBounds()
+    {
+        int minX = int.MaxValue, minY = int.MaxValue;
+        int maxX = int.MinValue, maxY = int.MinValue;
+        foreach (var key in currentGame.Areas[currentAreaKey].Rooms.Keys)
+        {
+            var parts = key.Split(',');
+            int rx = int.Parse(parts[0]), ry = int.Parse(parts[1]);
+            minX = Math.Min(minX, rx); minY = Math.Min(minY, ry);
+            maxX = Math.Max(maxX, rx); maxY = Math.Max(maxY, ry);
+        }
+        return (minX, minY, maxX, maxY);
+    }
+
+    private void MinimapPanel_Paint(object? sender, PaintEventArgs e)
+    {
+        var g = e.Graphics;
+        var rooms = currentGame.Areas[currentAreaKey].Rooms;
+        if (rooms.Count == 0) return;
+
+        // Compute bounds expanded by 1 to show empty neighbor slots
+        var (minX, minY, maxX, maxY) = GetAreaBounds();
+        int dispMinX = minX - 1, dispMinY = minY - 1;
+        int dispMaxX = maxX + 1, dispMaxY = maxY + 1;
+        int cols = dispMaxX - dispMinX + 1;
+        int rows = dispMaxY - dispMinY + 1;
+
+        int panW = minimapPanel.ClientSize.Width;
+        int panH = minimapPanel.ClientSize.Height;
+
+        const int arrowSpace = 28;
+        int availW = panW - arrowSpace * 2;
+        int availH = panH - arrowSpace * 2;
+
+        int cellW = Math.Max(8, availW / Math.Max(1, cols));
+        int cellH = Math.Max(8, availH / Math.Max(1, rows));
+        int cellSize = Math.Min(cellW, cellH);
+
+        int gridW = cellSize * cols;
+        int gridH = cellSize * rows;
+        int offX = arrowSpace + (availW - gridW) / 2;
+        int offY = arrowSpace + (availH - gridH) / 2;
+
+        var curParts = currentRoomKey.Split(',');
+        int curRx = int.Parse(curParts[0]), curRy = int.Parse(curParts[1]);
+
+        // Collect all neighbor slots that are adjacent to at least one existing room but don't exist yet
+        var emptyNeighbors = new HashSet<(int, int)>();
+        int[] dx = { 0, 0, -1, 1 };
+        int[] dy = { -1, 1, 0, 0 };
+        foreach (var key in rooms.Keys)
+        {
+            var p = key.Split(',');
+            int rx = int.Parse(p[0]), ry = int.Parse(p[1]);
+            for (int d = 0; d < 4; d++)
+            {
+                int nx = rx + dx[d], ny = ry + dy[d];
+                if (!rooms.ContainsKey($"{nx},{ny}"))
+                    emptyNeighbors.Add((nx, ny));
+            }
+        }
+
+        // Draw empty neighbor slots as dashed placeholders with +
+        using var dashPen = new Pen(Color.FromArgb(70, 70, 70)) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash };
+        using var plusFont = new Font("Arial", Math.Max(7f, Math.Min(14f, cellSize / 2.5f)), FontStyle.Bold);
+        foreach (var (nx, ny) in emptyNeighbors)
+        {
+            int px = offX + (nx - dispMinX) * cellSize;
+            int py = offY + (ny - dispMinY) * cellSize;
+            g.DrawRectangle(dashPen, px + 2, py + 2, cellSize - 5, cellSize - 5);
+            if (cellSize >= 12)
+            {
+                var sz = g.MeasureString("+", plusFont);
+                g.DrawString("+", plusFont, Brushes.DimGray,
+                    px + (cellSize - sz.Width) / 2,
+                    py + (cellSize - sz.Height) / 2);
+            }
+        }
+
+        // Draw existing rooms
+        foreach (var kv in rooms)
+        {
+            var parts = kv.Key.Split(',');
+            int rx = int.Parse(parts[0]), ry = int.Parse(parts[1]);
+            int px = offX + (rx - dispMinX) * cellSize;
+            int py = offY + (ry - dispMinY) * cellSize;
+
+            bool isCurrent = rx == curRx && ry == curRy;
+            var fillColor = isCurrent ? Color.FromArgb(80, 160, 255) : Color.FromArgb(90, 90, 90);
+            g.FillRectangle(new SolidBrush(fillColor), px + 1, py + 1, cellSize - 2, cellSize - 2);
+            g.DrawRectangle(isCurrent ? Pens.White : Pens.Gray, px + 1, py + 1, cellSize - 3, cellSize - 3);
+
+            if (cellSize >= 20)
+            {
+                string label = kv.Key;
+                var font = new Font("Arial", Math.Min(7f, cellSize / 4f));
+                var textSize = g.MeasureString(label, font);
+                g.DrawString(label, font, Brushes.White,
+                    px + (cellSize - textSize.Width) / 2,
+                    py + (cellSize - textSize.Height) / 2);
+            }
+        }
+
+        // Draw arrow buttons
+        DrawArrowButton(g, panW / 2 - 12, 2, "↑", rooms.ContainsKey($"{curRx},{curRy - 1}"));
+        DrawArrowButton(g, panW / 2 - 12, panH - 26, "↓", rooms.ContainsKey($"{curRx},{curRy + 1}"));
+        DrawArrowButton(g, 2, panH / 2 - 12, "←", rooms.ContainsKey($"{curRx - 1},{curRy}"));
+        DrawArrowButton(g, panW - 26, panH / 2 - 12, "→", rooms.ContainsKey($"{curRx + 1},{curRy}"));
+    }
+
+    private void DrawArrowButton(Graphics g, int x, int y, string arrow, bool active)
+    {
+        var bg = active ? Color.FromArgb(60, 120, 200) : Color.FromArgb(50, 50, 50);
+        var fg = active ? Color.White : Color.FromArgb(80, 80, 80);
+        g.FillRectangle(new SolidBrush(bg), x, y, 24, 24);
+        g.DrawRectangle(active ? Pens.SteelBlue : Pens.DimGray, x, y, 23, 23);
+        using var font = new Font("Arial", 11f, FontStyle.Bold);
+        var sz = g.MeasureString(arrow, font);
+        g.DrawString(arrow, font, new SolidBrush(fg), x + (24 - sz.Width) / 2, y + (24 - sz.Height) / 2);
+    }
+
+    private void MinimapPanel_MouseClick(object? sender, MouseEventArgs e)
+    {
+        var rooms = currentGame.Areas[currentAreaKey].Rooms;
+        var parts = currentRoomKey.Split(',');
+        int curRx = int.Parse(parts[0]), curRy = int.Parse(parts[1]);
+
+        int panW = minimapPanel.ClientSize.Width;
+        int panH = minimapPanel.ClientSize.Height;
+
+        var (minX, minY, maxX, maxY) = GetAreaBounds();
+        int dispMinX = minX - 1, dispMinY = minY - 1;
+        int dispMaxX = maxX + 1, dispMaxY = maxY + 1;
+        int cols = dispMaxX - dispMinX + 1, rows = dispMaxY - dispMinY + 1;
+        const int arrowSpace = 28;
+        int availW = panW - arrowSpace * 2;
+        int availH = panH - arrowSpace * 2;
+        int cellSize = Math.Min(Math.Max(8, availW / Math.Max(1, cols)),
+                                Math.Max(8, availH / Math.Max(1, rows)));
+        int gridW = cellSize * cols, gridH = cellSize * rows;
+        int offX = arrowSpace + (availW - gridW) / 2;
+        int offY = arrowSpace + (availH - gridH) / 2;
+
+        // Check arrow buttons first
+        string? target = null;
+        bool createNew = false;
+        if (new Rectangle(panW / 2 - 12, 2, 24, 24).Contains(e.Location))
+            target = $"{curRx},{curRy - 1}";
+        else if (new Rectangle(panW / 2 - 12, panH - 26, 24, 24).Contains(e.Location))
+            target = $"{curRx},{curRy + 1}";
+        else if (new Rectangle(2, panH / 2 - 12, 24, 24).Contains(e.Location))
+            target = $"{curRx - 1},{curRy}";
+        else if (new Rectangle(panW - 26, panH / 2 - 12, 24, 24).Contains(e.Location))
+            target = $"{curRx + 1},{curRy}";
+        else
+        {
+            // Check room cells
+            int clickCol = (e.X - offX) / cellSize + dispMinX;
+            int clickRow = (e.Y - offY) / cellSize + dispMinY;
+            if (e.X >= offX && e.Y >= offY)
+            {
+                string candidate = $"{clickCol},{clickRow}";
+                if (rooms.ContainsKey(candidate))
+                    target = candidate;
+                else
+                {
+                    // Check it's an empty neighbor slot
+                    int[] dx2 = { 0, 0, -1, 1 };
+                    int[] dy2 = { -1, 1, 0, 0 };
+                    bool isNeighbor = false;
+                    foreach (var key in rooms.Keys)
+                    {
+                        var kp = key.Split(',');
+                        int rx = int.Parse(kp[0]), ry = int.Parse(kp[1]);
+                        for (int d = 0; d < 4; d++)
+                            if (rx + dx2[d] == clickCol && ry + dy2[d] == clickRow)
+                                isNeighbor = true;
+                    }
+                    if (isNeighbor)
+                    {
+                        target = candidate;
+                        createNew = true;
+                    }
+                }
+            }
+        }
+
+        if (target == null) return;
+
+        if (createNew || (!rooms.ContainsKey(target) && target != null))
+        {
+            // Arrow button pointed at empty slot — create the room
+            if (!rooms.ContainsKey(target))
+            {
+                SaveUndo();
+                rooms[target] = new RoomData(GridWidth, GridHeight);
+                currentRoomKey = target;
+                RefreshRoomComboBox();
+                minimapPanel.Invalidate();
+                gridPanel.Invalidate();
+            }
+        }
+        else if (rooms.ContainsKey(target))
+        {
+            currentRoomKey = target;
+            roomComboBox.SelectedItem = currentRoomKey;
+            undoStack.Clear();
+            redoStack.Clear();
+            minimapPanel.Invalidate();
+            gridPanel.Invalidate();
+        }
     }
 
     private void RefreshAreaComboBox()
@@ -980,6 +1240,7 @@ public partial class Form1 : Form
         currentAreaKey = selected;
         currentRoomKey = currentGame.Areas[currentAreaKey].Rooms.Keys.First();
         RefreshRoomComboBox();
+        minimapPanel?.Invalidate();
         gridPanel.Invalidate();
     }
 
@@ -987,6 +1248,7 @@ public partial class Form1 : Form
     {
         if (roomComboBox.SelectedItem is not string selected) return;
         currentRoomKey = selected;
+        minimapPanel?.Invalidate();
         gridPanel.Invalidate();
     }
 
@@ -1095,12 +1357,14 @@ public partial class Form1 : Form
             }
 
             // Create new room
+            SaveUndo();
             var newRoom = new RoomData(GridWidth, GridHeight);
             currentGame.Areas[currentAreaKey].Rooms[roomKey] = newRoom;
 
             // Switch to the new room
             currentRoomKey = roomKey;
             RefreshRoomComboBox();
+            minimapPanel?.Invalidate();
             gridPanel.Invalidate();
 
             MessageBox.Show($"Room {roomKey} created!", "Success");
