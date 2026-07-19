@@ -256,10 +256,10 @@ public class JsStringArrayExporter : IMapExporter //Export to Json
 
     public string ExportMap(RoomData room)
     {
-        var enemiesInScanOrder = new List<EnemySpawn>();
-        var itemsInScanOrder = new List<ItemSpawn>();
+        var enemiesInScanOrder = new List<object>();
+        var itemsInScanOrder = new List<object>();
         var exitOverridesInScanOrder = new List<TeleportData>();
-        var playersInScanOrder = new List<PlayerSpawn>();
+        var playersInScanOrder = new List<object>();
         var teleportsInScanOrder = new List<TeleportData>();
 
         var layoutLines = new List<string>();
@@ -276,13 +276,15 @@ public class JsStringArrayExporter : IMapExporter //Export to Json
                 {
                     int id = tile.EnemyId.Value;
                     while (room.Enemies.Count <= id) room.Enemies.Add(new EnemySpawn { Type = "unknown", X = x, Y = y });
-                    enemiesInScanOrder.Add(room.Enemies[id]);
+                    var e = room.Enemies[id];
+                    enemiesInScanOrder.Add(new { type = e.Type, x = e.X, y = e.Y });
                 }
                 if (tile.Type == TileType.ItemSpawn && tile.ItemId.HasValue)
                 {
                     int id = tile.ItemId.Value;
                     while (room.Items.Count <= id) room.Items.Add(new ItemSpawn { Type = "unknown", X = x, Y = y });
-                    itemsInScanOrder.Add(room.Items[id]);
+                    var i = room.Items[id];
+                    itemsInScanOrder.Add(new { type = i.Type, x = i.X, y = i.Y });
                 }
                 if (tile.Type == TileType.ExitOverride && tile.ExitOverride.HasValue)
                 {
@@ -294,7 +296,7 @@ public class JsStringArrayExporter : IMapExporter //Export to Json
                 {
                     int id = tile.PlayerSpawnId.Value;
                     while (room.Players.Count <= id) room.Players.Add(new PlayerSpawn { SpawnId = id, X = x, Y = y });
-                    playersInScanOrder.Add(room.Players[id]);
+                    playersInScanOrder.Add(new { id });
                 }
                 if (tile.Type == TileType.Teleport && tile.TeleportId.HasValue)
                 {
@@ -305,14 +307,24 @@ public class JsStringArrayExporter : IMapExporter //Export to Json
             }
             layoutLines.Add(new string(rowChars.ToArray()));
         }
+
+        // exits and teleports as objects keyed by index (matching map.jsx convention of {})
+        var exitsObj = exitOverridesInScanOrder
+            .Select((exit, i) => new { key = i.ToString(), val = (object)new { targetRoom = exit.TargetRoom, x = exit.X, y = exit.Y, targetX = exit.TargetX, targetY = exit.TargetY } })
+            .ToDictionary(p => p.key, p => p.val);
+
+        var teleportsObj = teleportsInScanOrder
+            .Select((tp, i) => new { key = i.ToString(), val = (object)new { targetRoom = tp.TargetRoom, x = tp.X, y = tp.Y, targetX = tp.TargetX, targetY = tp.TargetY } })
+            .ToDictionary(p => p.key, p => p.val);
+
         var exportObject = new
         {
             layout = layoutLines,
             enemies = enemiesInScanOrder,
             items = itemsInScanOrder,
             players = playersInScanOrder,
-            exits = exitOverridesInScanOrder, // Export exit overrides in scan order
-            teleports = teleportsInScanOrder,    // Export teleports in scan order
+            exits = exitsObj,
+            teleports = teleportsObj,
             music = room.Music,
         };
 
