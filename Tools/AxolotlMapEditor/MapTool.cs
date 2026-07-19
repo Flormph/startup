@@ -274,23 +274,33 @@ public class JsStringArrayExporter : IMapExporter //Export to Json
 
                 if (tile.Type == TileType.EnemySpawn && tile.EnemyId.HasValue)
                 {
-                    enemiesInScanOrder.Add(room.Enemies[tile.EnemyId.Value]);
+                    int id = tile.EnemyId.Value;
+                    while (room.Enemies.Count <= id) room.Enemies.Add(new EnemySpawn { Type = "unknown", X = x, Y = y });
+                    enemiesInScanOrder.Add(room.Enemies[id]);
                 }
                 if (tile.Type == TileType.ItemSpawn && tile.ItemId.HasValue)
                 {
-                    itemsInScanOrder.Add(room.Items[tile.ItemId.Value]);
+                    int id = tile.ItemId.Value;
+                    while (room.Items.Count <= id) room.Items.Add(new ItemSpawn { Type = "unknown", X = x, Y = y });
+                    itemsInScanOrder.Add(room.Items[id]);
                 }
                 if (tile.Type == TileType.ExitOverride && tile.ExitOverride.HasValue)
                 {
-                    exitOverridesInScanOrder.Add(room.Exits[tile.ExitOverride.Value]);
+                    int id = tile.ExitOverride.Value;
+                    while (room.Exits.Count <= id) room.Exits.Add(new TeleportData { TargetRoom = "", X = x, Y = y });
+                    exitOverridesInScanOrder.Add(room.Exits[id]);
                 }
                 if (tile.Type == TileType.PlayerSpawn && tile.PlayerSpawnId.HasValue)
                 {
-                    playersInScanOrder.Add(room.Players[tile.PlayerSpawnId.Value]);
+                    int id = tile.PlayerSpawnId.Value;
+                    while (room.Players.Count <= id) room.Players.Add(new PlayerSpawn { SpawnId = id, X = x, Y = y });
+                    playersInScanOrder.Add(room.Players[id]);
                 }
                 if (tile.Type == TileType.Teleport && tile.TeleportId.HasValue)
                 {
-                    teleportsInScanOrder.Add(room.Teleports[tile.TeleportId.Value]);
+                    int id = tile.TeleportId.Value;
+                    while (room.Teleports.Count <= id) room.Teleports.Add(new TeleportData { TargetRoom = "", X = x, Y = y });
+                    teleportsInScanOrder.Add(room.Teleports[id]);
                 }
             }
             layoutLines.Add(new string(rowChars.ToArray()));

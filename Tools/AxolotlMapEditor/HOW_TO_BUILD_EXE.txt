@@ -1,0 +1,67 @@
+HOW TO BUILD AN EXE FOR AXOLOTL MAP EDITOR
+==========================================
+
+The exe in the publish/ folder is a static snapshot. Any code changes you make
+require a new build to take effect. Run one of the commands below from this folder:
+
+  cd C:\Users\josep\Documents\School\CS260\startup\Tools\AxolotlMapEditor
+
+
+──────────────────────────────────────────────────────────────────────────────
+OPTION 1 — Self-contained single file (~111 MB, no .NET install needed)
+──────────────────────────────────────────────────────────────────────────────
+dotnet publish -c Release -r win-x64 --self-contained true ^
+  -p:PublishSingleFile=true ^
+  -p:IncludeNativeLibrariesForSelfExtract=true ^
+  -o publish
+
+Output: publish\AxolotlMapEditor.exe
+Works on any Windows x64 machine. Large because it bundles the .NET runtime.
+
+
+──────────────────────────────────────────────────────────────────────────────
+OPTION 2 — Smaller single file (~55 MB) with trimming
+──────────────────────────────────────────────────────────────────────────────
+dotnet publish -c Release -r win-x64 --self-contained true ^
+  -p:PublishSingleFile=true ^
+  -p:IncludeNativeLibrariesForSelfExtract=true ^
+  -p:PublishTrimmed=true ^
+  -o publish
+
+WARNING: Trimming removes unused .NET code. Works fine for most apps but can
+break reflection-heavy code (the SetDoubleBuffered call in Form1.cs uses
+reflection — test carefully after trimming).
+
+
+──────────────────────────────────────────────────────────────────────────────
+OPTION 3 — Framework-dependent (~1 MB, requires .NET 10 installed)
+──────────────────────────────────────────────────────────────────────────────
+dotnet publish -c Release -r win-x64 --self-contained false ^
+  -p:PublishSingleFile=true ^
+  -o publish
+
+Output is tiny but the target machine must have the .NET 10 Desktop Runtime:
+  https://dotnet.microsoft.com/en-us/download/dotnet/10.0
+Since you already have it installed (you built the project), this works fine
+for your own machine.
+
+
+──────────────────────────────────────────────────────────────────────────────
+TIPS TO KEEP FILE SIZE DOWN
+──────────────────────────────────────────────────────────────────────────────
+1. Use Option 3 (framework-dependent) for personal use — 1 MB vs 111 MB.
+2. Add -p:DebugType=none -p:DebugSymbols=false to strip debug symbols.
+3. Add -p:EnableCompressionInSingleFile=true to compress the bundle (slower
+   startup, but noticeably smaller).
+4. Avoid embedding large assets (images, audio) directly in the project;
+   keep them as external files instead.
+
+
+──────────────────────────────────────────────────────────────────────────────
+QUICK REBUILD SHORTCUT (personal machine, smallest output)
+──────────────────────────────────────────────────────────────────────────────
+dotnet publish -c Release -r win-x64 --self-contained false ^
+  -p:PublishSingleFile=true ^
+  -p:DebugType=none ^
+  -p:DebugSymbols=false ^
+  -o publish
