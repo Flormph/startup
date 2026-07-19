@@ -72,7 +72,7 @@ export function Game() {
 
         let players = [];
         let lastTime = performance.now();
-        let playerArea = 'New Area'; // current area name
+        let playerArea = 'Shallows'; // current area name
         let playerRoom = [0, 0];
         let loadedRoom = null;
         let roomData = null;
