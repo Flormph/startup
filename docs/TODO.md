@@ -5,13 +5,12 @@ _Last updated: 2026-07-18_
 ## Map Tool
 - [X] Create batch export for game map.
 - [X] Add menu bar to UI.
-- [ ] Move palette to its own attachable window.
-- [ ] Allow for batch export of entire game map, area map, or just room data.
-- [ ] Allow saving map files (consider a hash + custom filetype, e.g. `.axmap`)
-- [ ] Allow drag painting (click-and-drag to paint multiple tiles at once)
+- [X] Move palette to its own window.
+- [X] Allow for batch export of entire game map, area map, or just room data.
+- [X] Allow saving map files (consider a hash + custom filetype, e.g. `.axmap`)
+- [X] Allow drag painting (click-and-drag to paint multiple tiles at once)
 - [ ] Beautify palette (move to a sidebar, matching conventions of other editor tools)
-- [ ] Fix window sizing (currently requires manually stretching the window to see the full palette + grid)
-- [ ] Add a File / Edit / View menu bar at the top of the tool
+- [X] Fix window sizing (currently requires manually stretching the window to see the full palette + grid)
 - [ ] Add UI sprites to Map Tool (low priority)
 
 ## Game
