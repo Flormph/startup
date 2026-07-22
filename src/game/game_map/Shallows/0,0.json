@@ -18,7 +18,26 @@
     "L    ###      P     ##########",
     "##############################"
   ],
-  "enemies": [],
+  "enemies": [
+    {
+      "id": "isopod-1",
+      "type": "isopod",
+      "position": [
+        12,
+        5
+      ],
+      "direction": 1
+    },
+    {
+      "id": "isopod-2",
+      "type": "isopod",
+      "position": [
+        1,
+        1
+      ],
+      "direction": -1
+    }
+  ],
   "items": [],
   "players": [
     {
