@@ -21,7 +21,7 @@
   "enemies": [],
   "items": [],
   "players": [],
-  "exits": [],
-  "teleports": [],
+  "exits": {},
+  "teleports": {},
   "music": null
 }
