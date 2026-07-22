@@ -103,7 +103,7 @@ export function Game() {
 
                 if (players.length === 0) { // TODO: will probably break when multiple players are added later
                     players = parsed.players.map((pos, i) => {
-                        const p = createPlayer(); // real player object, all physics fields present
+                        const p = createPlayer(1, true); // real player object, all physics fields present TODO: assign unique IDs to players
                         p.x = pos.x;
                         p.y = pos.y;
                         p.id = roomData.players[i]?.id ?? i; // fallback to index if no id provided
