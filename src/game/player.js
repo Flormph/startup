@@ -8,8 +8,11 @@ import {
     WALL_SLIDE_SPEED, WALL_JUMP_LOCK_TIME,
 } from './constants.js';
 
-export function createPlayer() {
+export function createPlayer(id, isLocal) {
     return {
+        id: id,
+        isLocal: isLocal,  // true = this client controls it; false = ghost/remote
+        isGhost: false,  // true = visible but non-interactive with this players world
         x: 2,
         y: 5,
         width: STAND_WIDTH,
@@ -26,6 +29,11 @@ export function createPlayer() {
         isPouncing: false,
         facing: 1,
         wallSide: 0,
+        health: 60,
+        isInvulnerable: false,
+        isWallSliding: false,
+        isFlying: false,
+        isClimbing: false,
     };
 }
 
@@ -295,5 +303,16 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
                 player.vy = 0;
             }
         }
+    }
+
+    // Combat and Health Management
+
+    // Combat
+    const wantsToAttack = keysPressed['KeyJ'] && !player.isPouncing;
+
+    if (wantsToAttack) {
+        // Implement attack logic here (e.g., check for enemies in range, apply damage)
+        // For now, just log the attack action
+        console.log(`Player ${player.id} attacks!`);
     }
 }
