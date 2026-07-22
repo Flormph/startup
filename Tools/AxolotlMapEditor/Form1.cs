@@ -59,6 +59,9 @@ public partial class Form1 : Form
     private ComboBox areaComboBox = null!;
     private ComboBox roomComboBox = null!;
     private Label toolStatusLabel = null!;
+    private Label areaInfoValueLabel = null!;
+    private Label roomInfoValueLabel = null!;
+    private Label roomCoordsValueLabel = null!;
 
     public Form1()
     {
@@ -330,10 +333,14 @@ public partial class Form1 : Form
         var areasRoomsPanel = BuildAreasRoomsPanel();
         areasRoomsPanel.Dock = DockStyle.Top;
         areasRoomsPanel.Height = 190;
+        var selectionInfoPanel = BuildSelectionInfoPanel();
+        selectionInfoPanel.Dock = DockStyle.Bottom;
+        selectionInfoPanel.Height = 140;
         minimapPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(30, 30, 30) };
         SetDoubleBuffered(minimapPanel);
         minimapPanel.Paint += MinimapPanel_Paint;
         minimapPanel.MouseClick += MinimapPanel_MouseClick;
+        areasRoomsAndMinimap.Controls.Add(selectionInfoPanel);
         areasRoomsAndMinimap.Controls.Add(minimapPanel);
         areasRoomsAndMinimap.Controls.Add(areasRoomsPanel);
         rightSplit.Panel2.Controls.Add(areasRoomsAndMinimap);
@@ -446,15 +453,114 @@ public partial class Form1 : Form
         };
         panel.Controls.Add(toolStatusLabel);
 
-        var infoLabel = new Label
+        var controlsInfoLabel = new Label
         {
-            Text = "Zoom: Ctrl++/- or +/- key\nPan: Scroll wheel\nRoom / Project Info (music, sprite sheet, palette colors — coming next)",
+            Text = "Zoom: Ctrl++/- or +/- key\nPan: Scroll wheel",
             Location = new Point(10, 40),
             AutoSize = true,
         };
-        panel.Controls.Add(infoLabel);
+        panel.Controls.Add(controlsInfoLabel);
 
         return panel;
+    }
+
+    private Panel BuildSelectionInfoPanel()
+    {
+        var panel = new Panel
+        {
+            BackColor = SystemColors.ControlLight,
+            Padding = new Padding(8),
+        };
+
+        int sectionTop = 8;
+
+        var areaSectionLabel = new Label
+        {
+            Text = "Area",
+            Location = new Point(10, sectionTop),
+            AutoSize = true,
+            Font = new Font(this.Font, FontStyle.Bold),
+        };
+        panel.Controls.Add(areaSectionLabel);
+
+        areaInfoValueLabel = new Label
+        {
+            Text = "Name: -",
+            Location = new Point(10, sectionTop + 24),
+            AutoSize = true,
+        };
+        panel.Controls.Add(areaInfoValueLabel);
+
+        var renameAreaInfoButton = new Button
+        {
+            Text = "Rename Area",
+            Location = new Point(220, sectionTop + 18),
+            Width = 110,
+            Height = 28,
+        };
+        renameAreaInfoButton.Click += (s, e) => RenameCurrentArea();
+        panel.Controls.Add(renameAreaInfoButton);
+
+        int roomSectionTop = sectionTop + 56;
+        var roomSectionLabel = new Label
+        {
+            Text = "Room",
+            Location = new Point(10, roomSectionTop),
+            AutoSize = true,
+            Font = new Font(this.Font, FontStyle.Bold),
+        };
+        panel.Controls.Add(roomSectionLabel);
+
+        roomInfoValueLabel = new Label
+        {
+            Text = "Name: -",
+            Location = new Point(10, roomSectionTop + 24),
+            AutoSize = true,
+        };
+        panel.Controls.Add(roomInfoValueLabel);
+
+        roomCoordsValueLabel = new Label
+        {
+            Text = "Coordinates: -",
+            Location = new Point(10, roomSectionTop + 44),
+            AutoSize = true,
+        };
+        panel.Controls.Add(roomCoordsValueLabel);
+
+        var renameRoomInfoButton = new Button
+        {
+            Text = "Rename Room",
+            Location = new Point(220, roomSectionTop + 28),
+            Width = 110,
+            Height = 28,
+        };
+        renameRoomInfoButton.Click += (s, e) => RenameCurrentRoom();
+        panel.Controls.Add(renameRoomInfoButton);
+
+        UpdateSelectionInfo();
+
+        return panel;
+    }
+
+    private void UpdateSelectionInfo()
+    {
+        if (areaInfoValueLabel == null || roomInfoValueLabel == null || roomCoordsValueLabel == null)
+        {
+            return;
+        }
+
+        areaInfoValueLabel.Text = $"Name: {currentAreaKey}";
+        roomInfoValueLabel.Text = $"Name: {currentRoomKey}";
+
+        var parts = currentRoomKey.Split(',');
+        if (parts.Length == 2 && int.TryParse(parts[0], out int roomX) && int.TryParse(parts[1], out int roomY))
+        {
+            roomCoordsValueLabel.Text = $"Coordinates: ({roomX}, {roomY})";
+        }
+        else
+        {
+            roomCoordsValueLabel.Text = "Coordinates: (invalid key)";
+        }
     }
 
     private void UpdateToolStatus()
@@ -1207,7 +1313,7 @@ public partial class Form1 : Form
                 gridPanel.Invalidate();
             }
         }
-        else if (rooms.ContainsKey(target))
+        else if (target != null && rooms.ContainsKey(target))
         {
             currentRoomKey = target;
             roomComboBox.SelectedItem = currentRoomKey;
@@ -1224,6 +1330,7 @@ public partial class Form1 : Form
         foreach (var key in currentGame.Areas.Keys)
             areaComboBox.Items.Add(key);
         areaComboBox.SelectedItem = currentAreaKey;
+        UpdateSelectionInfo();
     }
 
     private void RefreshRoomComboBox()
@@ -1232,6 +1339,7 @@ public partial class Form1 : Form
         foreach (var key in currentGame.Areas[currentAreaKey].Rooms.Keys)
             roomComboBox.Items.Add(key);
         roomComboBox.SelectedItem = currentRoomKey;
+        UpdateSelectionInfo();
     }
 
     private void AreaComboBox_SelectedIndexChanged(object? sender, EventArgs e)
@@ -1240,6 +1348,7 @@ public partial class Form1 : Form
         currentAreaKey = selected;
         currentRoomKey = currentGame.Areas[currentAreaKey].Rooms.Keys.First();
         RefreshRoomComboBox();
+        UpdateSelectionInfo();
         minimapPanel?.Invalidate();
         gridPanel.Invalidate();
     }
@@ -1248,6 +1357,7 @@ public partial class Form1 : Form
     {
         if (roomComboBox.SelectedItem is not string selected) return;
         currentRoomKey = selected;
+        UpdateSelectionInfo();
         minimapPanel?.Invalidate();
         gridPanel.Invalidate();
     }
@@ -1307,6 +1417,142 @@ public partial class Form1 : Form
 
             MessageBox.Show($"Area '{areaName}' created!", "Success");
         }
+    }
+
+    private void RenameCurrentArea()
+    {
+        string oldAreaName = currentAreaKey;
+
+        var dialog = new Form
+        {
+            Text = "Rename Area",
+            Width = 340,
+            Height = 200,
+            StartPosition = FormStartPosition.CenterParent,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false,
+        };
+
+        var label = new Label { Text = "New Area Name:", Location = new Point(10, 10), AutoSize = true };
+        var textBox = new TextBox { Text = oldAreaName, Location = new Point(10, 35), Width = 300 };
+        var okButton = new Button { Text = "OK", Location = new Point(170, 130), Width = 70, DialogResult = DialogResult.OK };
+        var cancelButton = new Button { Text = "Cancel", Location = new Point(250, 130), Width = 70, DialogResult = DialogResult.Cancel };
+
+        dialog.Controls.Add(label);
+        dialog.Controls.Add(textBox);
+        dialog.Controls.Add(okButton);
+        dialog.Controls.Add(cancelButton);
+        dialog.AcceptButton = okButton;
+        dialog.CancelButton = cancelButton;
+
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+        string newAreaName = textBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(newAreaName))
+        {
+            MessageBox.Show("Area name cannot be empty!", "Error");
+            return;
+        }
+
+        if (newAreaName == oldAreaName) return;
+
+        if (currentGame.Areas.ContainsKey(newAreaName))
+        {
+            MessageBox.Show("An area with this name already exists!", "Error");
+            return;
+        }
+
+        var areaData = currentGame.Areas[oldAreaName];
+        currentGame.Areas.Remove(oldAreaName);
+        areaData.Name = newAreaName;
+        currentGame.Areas[newAreaName] = areaData;
+
+        currentAreaKey = newAreaName;
+        RefreshAreaComboBox();
+        RefreshRoomComboBox();
+        UpdateSelectionInfo();
+        RefreshMinimap();
+        gridPanel.Invalidate();
+    }
+
+    private void RenameCurrentRoom()
+    {
+        string oldRoomKey = currentRoomKey;
+        var rooms = currentGame.Areas[currentAreaKey].Rooms;
+
+        if (!rooms.ContainsKey(oldRoomKey))
+        {
+            MessageBox.Show("Current room could not be found.", "Error");
+            return;
+        }
+
+        int startX = 0;
+        int startY = 0;
+        var parts = oldRoomKey.Split(',');
+        if (parts.Length == 2)
+        {
+            int.TryParse(parts[0], out startX);
+            int.TryParse(parts[1], out startY);
+        }
+
+        var dialog = new Form
+        {
+            Text = "Rename Room",
+            Width = 340,
+            Height = 240,
+            StartPosition = FormStartPosition.CenterParent,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false,
+            MinimizeBox = false,
+        };
+
+        var label = new Label { Text = "Room Coordinates (x,y):", Location = new Point(10, 10), AutoSize = true };
+        var xLabel = new Label { Text = "X:", Location = new Point(10, 45), AutoSize = true };
+        var xTextBox = new TextBox { Text = startX.ToString(), Location = new Point(30, 42), Width = 50 };
+        var yLabel = new Label { Text = "Y:", Location = new Point(100, 45), AutoSize = true };
+        var yTextBox = new TextBox { Text = startY.ToString(), Location = new Point(120, 42), Width = 50 };
+
+        var okButton = new Button { Text = "OK", Location = new Point(170, 165), Width = 70, DialogResult = DialogResult.OK };
+        var cancelButton = new Button { Text = "Cancel", Location = new Point(250, 165), Width = 70, DialogResult = DialogResult.Cancel };
+
+        dialog.Controls.Add(label);
+        dialog.Controls.Add(xLabel);
+        dialog.Controls.Add(xTextBox);
+        dialog.Controls.Add(yLabel);
+        dialog.Controls.Add(yTextBox);
+        dialog.Controls.Add(okButton);
+        dialog.Controls.Add(cancelButton);
+        dialog.AcceptButton = okButton;
+        dialog.CancelButton = cancelButton;
+
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+        if (!int.TryParse(xTextBox.Text, out int newX) || !int.TryParse(yTextBox.Text, out int newY))
+        {
+            MessageBox.Show("X and Y must be integers!", "Error");
+            return;
+        }
+
+        string newRoomKey = $"{newX},{newY}";
+        if (newRoomKey == oldRoomKey) return;
+
+        if (rooms.ContainsKey(newRoomKey))
+        {
+            MessageBox.Show($"Room {newRoomKey} already exists in this area!", "Error");
+            return;
+        }
+
+        SaveUndo();
+        var roomData = rooms[oldRoomKey];
+        rooms.Remove(oldRoomKey);
+        rooms[newRoomKey] = roomData;
+        currentRoomKey = newRoomKey;
+
+        RefreshRoomComboBox();
+        UpdateSelectionInfo();
+        RefreshMinimap();
+        gridPanel.Invalidate();
     }
 
     private void AddNewRoom()
