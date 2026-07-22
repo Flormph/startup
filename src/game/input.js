@@ -41,6 +41,7 @@ export function createInputHandler(onEscape) {
         keysPressed['KeyA'] = false;
         keysPressed['ArrowRight'] = false;
         keysPressed['KeyD'] = false;
+        keysPressed['KeyJ'] = false;
     }
 
     return { keys, keysPressed, attach, detach, clearFrameKeys };
