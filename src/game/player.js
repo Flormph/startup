@@ -1,6 +1,6 @@
 import { checkCollision } from './collision.js';
 import {
-    GRAVITY, MOVE_SPEED, JUMP_FORCE, COYOTE_TIME, SPRINT_JUMP_MULT,
+    GRAVITY, TERMINAL_VELOCITY, MOVE_SPEED, JUMP_FORCE, COYOTE_TIME, SPRINT_JUMP_MULT,
     SPRINT_TIME, SPRINT_MULT, SPRINT_GRACE_PERIOD,
     STAND_HEIGHT, STAND_WIDTH, CROUCH_HEIGHT, CROUCH_WIDTH, CROUCH_SPEED_MULT,
     GALLOP_WIDTH, GALLOP_HEIGHT, GALLOP_SPEED_MULT, POUNCE_JUMP_MULT,
@@ -227,7 +227,7 @@ export function updatePlayer(player, deltaTime, keys, keysPressed, platforms) {
 
     // GRAVITY and WALL SLIDING
 
-    player.vy += GRAVITY * deltaTime;
+    player.vy = Math.min(player.vy + GRAVITY * deltaTime, TERMINAL_VELOCITY);
 
     const wallSide = checkWallContact(player, platforms);
     const pressingIntoWall =

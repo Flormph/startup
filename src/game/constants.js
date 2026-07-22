@@ -17,6 +17,7 @@ export const SPRITE_CROP = {
     horz: { x: SPRITE_OFFSET_HORZ_X, y: SPRITE_OFFSET_HORZ_Y, width: 32, height: 12 },
 }
 export const GRAVITY = 120; // units per second squared
+export const TERMINAL_VELOCITY = 50; // maximum falling speed in units per second
 export const MOVE_SPEED = 10; // units per second
 export const JUMP_FORCE = 32; // units per second (initial upward velocity)
 export const COLUMNS = 30; // how many units wide the visible world is
