@@ -3,11 +3,32 @@ import { useNavigate } from 'react-router-dom';
 
 export function Login() {
     const navigate = useNavigate();
+    const [error, setError] = React.useState(null);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        navigate('/sticky-note');
-    };
+    async function handleSubmit(event) {
+        event.preventDefault();
+
+        const action = event.nativeEvent.submitter.name; // 'login-action' or 'create-account-action'
+        const endpoint = action === 'create-account-action' ? '/api/auth/create' : '/api/auth/login';
+
+        const formData = new FormData(event.target);
+        const email = formData.get('email');
+        const password = formData.get('password');
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+            credentials: 'include', // Include cookies in the request
+        });
+
+        if (response.ok) {
+            navigate('/sticky-note'); // Redirect to the sticky note page after successful login or account creation
+        } else {
+            const data = await response.json();
+            setError(data.msg || 'An error occurred. Please try again.');
+        }
+    }
 
     return (
         <main className="p-5 pb-[70px] flex flex-col items-center">
