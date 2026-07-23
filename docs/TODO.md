@@ -1,6 +1,6 @@
 # Project TODO
 
-_Last updated: 2026-07-18_
+_Last updated: 2026-07-19_
 
 ## Map Tool
 - [X] Create batch export for game map.
@@ -28,12 +28,13 @@ _Last updated: 2026-07-18_
 - [ ] Add more on-theme sprites instead of just emojis
 
 ## Pet-Meadow
-- [ ] Add weather API tie-in
-- [ ] Add component to fulfill rubric requirement (useEffect + a place displaying user info via useState)
+- [X] Add weather API tie-in
+- [X] Add component to fulfill rubric requirement (useEffect + a place displaying user info via useState)
 - [ ] Add animated pet that visually displays stats in the pet menu
 
 ## Login
-- [ ] Add backend and middleman service
+- [X] Add backend and middleman service
+- [ ] Fix nav bar shift when logging in
 
 ## About
 - [ ] Fix text spreading over the whole screen
