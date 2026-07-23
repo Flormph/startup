@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const app = express();
 
@@ -135,9 +137,14 @@ apiRouter.put('/pet', verifyAuth, async (req, res) => {
 });
 
 apiRouter.get('/weather', async (req, res) => {
-    const respone = await fetch('http://api.weatherstack.com/current?access_key=4ad0370b4fb950e762ecc3f9d85fe1df&query=Provo');
-    const data = await respone.json();
-    res.send({ description: data?.current?.weather_descriptions?.[0] || 'Unknown' });
+    try {
+        const response = await fetch(`http://api.weatherstack.com/current?access_key=${process.env.WEATHERSTACK_KEY}&query=Provo`);
+        const data = await response.json();
+        res.send({ description: data?.current?.weather_descriptions?.[0] || 'Unknown' });
+    } catch (error) {
+        console.error('Error fetching weather data:', error);
+        res.status(500).send({ msg: 'Error fetching weather data' });
+    }
 });
 
 apiRouter.get('/auth/me', verifyAuth, async (req, res) => {
