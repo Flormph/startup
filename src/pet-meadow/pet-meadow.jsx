@@ -1,12 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 
 
 export function PetMeadow() {
-    const [petName, setPetName] = useState('Jimmy');
-    const [weather, setWeather] = useState('Sunny');
-    const [excitement, setExcitement] = useState(78);
-    const [happiness, setHappiness] = useState(51);
+    const [pet, setPet] = useState(null); // null while loading
+    const [weather, setWeather] = useState('Sunny'); // Default weather state
+
+    // get weather from weatherstack API
+    function fetchWeather() {
+        fetch('/api/weather')
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.description) {
+                    setWeather(data.description);
+                }
+            })
+            .catch((err) => console.error('Error fetching weather data:', err));
+    }
+
+    useEffect(() => {
+        async function loadPet() {
+            let res = await fetch('/api/pet', { credentials: 'include' });
+
+            if (res.status === 404) {
+                // No pet stats found for user, create a new pet
+                res = await fetch('/api/pet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ petName: 'Jimmy' }),
+                });
+            }
+
+            if (res.ok) {
+                const data = await res.json();
+                setPet(data);
+            }
+        }
+
+        loadPet();
+        fetchWeather();
+    }, []);
+
+    if (!pet) {
+        return <main className="p-6 text-center text-[hsl(319,25%,46%)]">Loading meadow...</main>;
+    }
 
     function getMoodLabel(happiness) {
         if (happiness >= 80) return 'joyful';
@@ -16,18 +54,11 @@ export function PetMeadow() {
 
     }
 
-    function getWeatherLabel(weather) {
-        // Return a label based on the weather state from API
-        switch (weather) {
-            case 'Sunny':
-                return 'Sunny';
-            case 'Rainy':
-                return 'Rainy';
-            case 'Cloudy':
-                return 'Cloudy';
-            default:
-                return 'Unknown';
-        }
+    function classifyWeather(description) {
+        const d = description.toLowerCase();
+        if (d.includes('rain') || d.includes('drizzle')) return 'rainy';
+        if (d.includes('cloud') || d.includes('overcast')) return 'cloudy';
+        return 'sunny';
     }
 
     function getExcitementLabel(excitement) {
@@ -37,6 +68,16 @@ export function PetMeadow() {
         return 'questioning his friendship with you';
     }
 
+    function getSceneClasses(category) {
+        switch (category) {
+            case 'rainy':
+                return 'bg-gradient-to-b from-slate-400 to-slate-200';
+            case 'cloudy':
+                return 'bg-gradient-to-b from-slate-300 to-sky-100';
+            default:
+                return 'bg-gradient-to-b from-sky-300 to-sky-50';
+        }
+    }
     function StatBar({ label, value, max = 100, color }) {
         const pct = Math.max(0, Math.min(100, (value / max) * 100));
         return (
@@ -57,10 +98,9 @@ export function PetMeadow() {
 
     return (
         <main className="p-6 flex flex-col items-center gap-4">
-            <h1 className="text-2xl font-bold text-[hsl(319,25%,46%)]">{petName}'s Meadow</h1>
+            <h1 className="text-2xl font-bold text-[hsl(319,25%,46%)]">{pet.petName}'s Meadow</h1>
 
-            <div id="meadow-scene" className="relative w-full max-w-2xl h-96 overflow-hidden rounded-lg border-2 border-[hsl(319,25%,46%)] bg-gradient-to-b from-sky-300 to-sky-50">
-
+            <div id="meadow-scene" className={`relative w-full max-w-2xl h-96 overflow-hidden rounded-lg border-2 border-[hsl(319,25%,46%)] ${getSceneClasses(classifyWeather(weather))}`}>
                 <div className="absolute bottom-0 left-0 w-full h-1/4 bg-gradient-to-b from-green-500 to-green-100 border-t-2 border-green-500"></div>
 
                 <img id="pet" src="axolotl.png" alt="Axolotl Pet"
@@ -70,20 +110,20 @@ export function PetMeadow() {
 
             <div className="bg-[#f3c3e0] border-2 border-[hsl(319,25%,46%)] rounded max-w-2xl text-center flex flex-row items-start gap-4 justify-center px-4 py-2">
                 <div className="bg-[antiquewhite] border-2 border-[hsl(319,25%,46%)] px-3 py-1 rounded flex flex-col">
-                    <div className="text-[hsl(319,25%,46%)]">{petName} is {getExcitementLabel(excitement)}</div>
+                    <div className="text-[hsl(319,25%,46%)]">{pet.petName} is {getExcitementLabel(pet.excitement)}</div>
                     <div>
-                        <StatBar label="Excitement" value={excitement} color="hsl(319,25%,46%)" />
+                        <StatBar label="Excitement" value={pet.excitement} color="hsl(319,25%,46%)" />
                     </div>
                 </div>
 
                 <div className="bg-[antiquewhite] border-2 border-[hsl(319,25%,46%)] px-3 py-1 rounded flex flex-col">
-                    <div className="text-[hsl(319,25%,46%)]">{petName} is {getMoodLabel(happiness)}</div>
+                    <div className="text-[hsl(319,25%,46%)]">{pet.petName} is {getMoodLabel(pet.happiness)}</div>
                     <div>
-                        <StatBar label="Happiness" value={happiness} color="hsl(319,25%,46%)" />
+                        <StatBar label="Happiness" value={pet.happiness} color="hsl(319,25%,46%)" />
                     </div>
                 </div>
                 <div className="bg-[antiquewhite] border-2 border-[hsl(319,25%,46%)] px-3 py-1 rounded flex flex-col">
-                    <div className="text-[hsl(319,25%,46%)]">{getWeatherLabel(weather)} weather</div>
+                    <div className="text-[hsl(319,25%,46%)]">{classifyWeather(weather)} weather</div>
                 </div>
             </div>
         </main>
