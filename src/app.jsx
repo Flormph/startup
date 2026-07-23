@@ -9,6 +9,7 @@ import { About } from './about/about.jsx';
 import { Game } from './game/game.jsx';
 import { NotFound } from './not-found/not-found.jsx';
 import { AuthProvider } from './auth/auth.jsx';
+import { RouteGuard } from './route-guard/route-guard.jsx';
 
 
 export default function App() {
