@@ -159,3 +159,29 @@ function createPetStats(userId, petName) {
     axolotlStats.push(stats);
     return stats;
 }
+
+async function createUser(email, password) {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = {
+        id: uuid.v4(),
+        email: email,
+        password: hashedPassword,
+        token: uuid.v4(),
+    };
+    users.push(user);
+    return user;
+}
+
+async function findUser(field, value) {
+    if (!value) return null;
+
+    return users.find((u) => u[field] === value);
+}
+
+function setAuthCookie(res, authToken) {
+    res.cookie(authCookieName, authToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'strict',
+    });
+}
