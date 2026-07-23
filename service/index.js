@@ -139,6 +139,10 @@ apiRouter.get('/weather', async (req, res) => {
     res.send({ description: data?.current?.weather_descriptions?.[0] || 'Unknown' });
 });
 
+apiRouter.get('/auth/me', verifyAuth, async (req, res) => {
+    res.send({ email: req.user.email });
+});
+
 // Default error handler
 app.use(function (err, req, res, next) {
     res.status(500).send({ type: err.name, message: err.message });
