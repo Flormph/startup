@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
-import { RouteGuard } from '../route-guard/route-guard.jsx';
-
+import { useAuth } from '../auth/auth.jsx';
+import { useAuthedFetch } from '../auth/auth.jsx';
 
 const ZONES = [
     { zoneId: 'morning', label: 'Morning', x0: 0, x1: 0.5, y0: 0, y1: 0.33, triggerTime: '09:00', type: 'time' },
@@ -143,7 +143,8 @@ export function StickyNote() {
 
     useEffect(() => {
         async function loadReminders() {
-            const res = await fetch('/api/notes', { credentials: 'include' });
+            const authedFetch = useAuthedFetch();
+            const res = await authedFetch('/api/notes');
             if (res.ok) {
                 const data = await res.json();
                 setReminders(data.map((n) => n.reminder));
@@ -159,11 +160,11 @@ export function StickyNote() {
     async function saveReminder(reminder) {
         setReminder(reminder);
         try {
-            await fetch('/api/notes', {
+            const authedFetch = useAuthedFetch();
+            await authedFetch('/api/notes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(reminder),
-                credentials: 'include',
             });
         } catch (err) {
             console.error('Failed to save reminder:', err);

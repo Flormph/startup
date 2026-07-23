@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-
+import { useAuthedFetch } from '../auth/auth.jsx';
 
 
 export function PetMeadow() {
@@ -8,7 +8,8 @@ export function PetMeadow() {
 
     // get weather from weatherstack API
     function fetchWeather() {
-        fetch('/api/weather')
+        const authedFetch = useAuthedFetch();
+        authedFetch('/api/weather')
             .then(response => response.json())
             .then(data => {
                 if (data && data.description) {
@@ -19,15 +20,15 @@ export function PetMeadow() {
     }
 
     useEffect(() => {
+        const authedFetch = useAuthedFetch();
         async function loadPet() {
-            let res = await fetch('/api/pet', { credentials: 'include' });
+            let res = await authedFetch('/api/pet');
 
             if (res.status === 404) {
                 // No pet stats found for user, create a new pet
-                res = await fetch('/api/pet', {
+                res = await authedFetch('/api/pet', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
                     body: JSON.stringify({ petName: 'Jimmy' }),
                 });
             }
