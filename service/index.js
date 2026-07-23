@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 
-const port = process.argv.length > 2 ? process.argv[2] : 3000;
+const port = process.argv.length > 2 ? process.argv[2] : 4000;
 
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
@@ -9,6 +9,7 @@ const uuid = require('uuid');
 
 const authCookieName = "token";
 
+app.use(express.static('public')); // Serve static files from the public directory
 app.use(express.json());
 app.use(cookieParser());
 
