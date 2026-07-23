@@ -108,7 +108,7 @@ apiRouter.post('/notes', verifyAuth, async (req, res) => {
 
 // CreatePet creates a new axolotl stats entry for the authenticated user
 apiRouter.post('/pet', verifyAuth, async (req, res) => {
-    const existingStats = axolotlStats.find(stats => stats.userId === user.id);
+    const existingStats = axolotlStats.find(stats => stats.userId === req.user.id);
     if (existingStats) {
         return res.status(409).send({ msg: 'Pet stats already exist for user' });
     }
@@ -124,7 +124,7 @@ apiRouter.put('/pet', verifyAuth, async (req, res) => {
         return res.status(404).send({ msg: 'No stats found for user' });
     }
 
-    const allowedFields = ['petName', 'excitement', 'happiness', 'weather'];
+    const allowedFields = ['petName', 'excitement', 'happiness'];
     for (const field of allowedFields) {
         if (req.body[field] !== undefined) {
             userStats[field] = req.body[field];
@@ -149,7 +149,6 @@ function createPetStats(userId, petName) {
         petName: petName || 'Jimmy',
         excitement: 50,
         happiness: 50,
-        weather: 'Sunny',
     };
     axolotlStats.push(stats);
     return stats;
