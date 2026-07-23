@@ -10,27 +10,37 @@ export function Login() {
     async function handleSubmit(event) {
         event.preventDefault();
 
-        const action = event.nativeEvent.submitter.name; // 'login-action' or 'create-account-action'
+        const action = event.nativeEvent.submitter.name;
         const endpoint = action === 'create-account-action' ? '/api/auth/create' : '/api/auth/login';
 
         const formData = new FormData(event.target);
         const email = formData.get('email');
         const password = formData.get('password');
 
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-            credentials: 'include', // Include cookies in the request
-        });
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+                credentials: 'include',
+            });
 
-        if (response.ok) {
-            const data = await response.json();
-            setUser(data);
-            navigate('/sticky-note'); // Redirect to the sticky note page after successful login or account creation
-        } else {
-            const data = await response.json();
-            setError(data.msg || 'An error occurred. Please try again.');
+            let data = null;
+            try {
+                data = await response.json();
+            } catch {
+                // response wasn't JSON — fall through, data stays null
+            }
+
+            if (response.ok) {
+                setUser(data);
+                navigate('/sticky-note');
+            } else {
+                setError(data?.msg || `Something went wrong (${response.status})`);
+            }
+        } catch (err) {
+            // network failure — server unreachable, no response at all
+            setError('Could not reach the server. Please try again.');
         }
     }
 
@@ -38,6 +48,12 @@ export function Login() {
         <main className="p-5 pb-[70px] flex flex-col items-center">
             <h2 className="p-[2px]">Welcome to Gedidone!</h2>
             <p>Log in or create an account to get started!"</p>
+
+            {error && (
+                <p className="text-red-500 text-sm bg-red-50 border border-red-300 rounded px-3 py-1.5 mr-2">
+                    {error}
+                </p>
+            )}
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 p-5 items-center border-2 border-[hsl(319,25%,46%)]">                <div className="flex items-center gap-2">
                 <span className="w-24 text-right">Email:</span>
