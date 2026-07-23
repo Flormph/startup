@@ -27,3 +27,15 @@ export function AuthProvider({ children }) {
 export function useAuth() {
     return useContext(AuthContext);
 }
+
+export function useAuthedFetch() {
+    const { setUser } = useAuth();
+
+    return async function authedFetch(url, options = {}) {
+        const res = await fetch(url, { ...options, credentials: 'include' });
+        if (res.status === 401) {
+            setUser(null); // session's gone — RouteGuard will redirect on its own
+        }
+        return res;
+    };
+}
