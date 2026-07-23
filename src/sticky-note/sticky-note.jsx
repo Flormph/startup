@@ -34,7 +34,7 @@ function createReminder({ iconId, xPct, yPct }) {
     }
     const zone = ZONES.find((z) => z.zoneId === zoneId);
     return {
-        id: crypto.randomUUID(),
+        id,
         zoneId,
         iconId: iconId,
         xPct,
