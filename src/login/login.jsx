@@ -1,8 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/auth.jsx';
 
 export function Login() {
     const navigate = useNavigate();
+    const { setUser } = useAuth();
     const [error, setError] = React.useState(null);
 
     async function handleSubmit(event) {
@@ -23,6 +25,8 @@ export function Login() {
         });
 
         if (response.ok) {
+            const data = await response.json();
+            setUser(data);
             navigate('/sticky-note'); // Redirect to the sticky note page after successful login or account creation
         } else {
             const data = await response.json();
