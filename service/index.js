@@ -29,6 +29,7 @@ apiRouter.post('/auth/create', async (req, res) => {
         res.status(409).send({ msg: 'Existing user' });
     } else {
         const user = await createUser(req.body.email, req.body.password);
+        createPetStats(user.id, req.body.petName);
 
         setAuthCookie(res, user.token);
         res.send({ email: user.email });
@@ -107,20 +108,11 @@ apiRouter.post('/notes', verifyAuth, async (req, res) => {
 
 // CreatePet creates a new axolotl stats entry for the authenticated user
 apiRouter.post('/pet', verifyAuth, async (req, res) => {
-    const user = req.user;
     const existingStats = axolotlStats.find(stats => stats.userId === user.id);
     if (existingStats) {
         return res.status(409).send({ msg: 'Pet stats already exist for user' });
     }
-
-    const stats = {
-        userId: user.id,
-        petName: req.body.petName || 'Jimmy',
-        excitement: 50,
-        happiness: 50,
-        weather: 'Sunny',
-    };
-    axolotlStats.push(stats);
+    const stats = createPetStats(req.user.id, req.body.petName);
     return res.status(201).send(stats);
 });
 
@@ -150,3 +142,15 @@ app.use(function (err, req, res, next) {
 app.use((req, res) => {
     res.sendFile('index.html', { root: 'public' });
 });
+
+function createPetStats(userId, petName) {
+    const stats = {
+        userId: userId,
+        petName: petName || 'Jimmy',
+        excitement: 50,
+        happiness: 50,
+        weather: 'Sunny',
+    };
+    axolotlStats.push(stats);
+    return stats;
+}
