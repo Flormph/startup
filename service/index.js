@@ -133,6 +133,12 @@ apiRouter.put('/pet', verifyAuth, async (req, res) => {
     res.send(userStats);
 });
 
+apiRouter.get('/weather', async (req, res) => {
+    const respone = await fetch('http://api.weatherstack.com/current?access_key=4ad0370b4fb950e762ecc3f9d85fe1df&query=Provo');
+    const data = await respone.json();
+    res.send({ description: data?.current?.weather_descriptions?.[0] || 'Unknown' });
+});
+
 // Default error handler
 app.use(function (err, req, res, next) {
     res.status(500).send({ type: err.name, message: err.message });
