@@ -8,6 +8,7 @@ import { StickyNote } from './sticky-note/sticky-note.jsx';
 import { About } from './about/about.jsx';
 import { Game } from './game/game.jsx';
 import { NotFound } from './not-found/not-found.jsx';
+import { AuthProvider } from './auth/auth.jsx';
 
 
 export default function App() {
@@ -80,14 +81,18 @@ export default function App() {
             </header>
 
             <main className="flex-1">
-                <Routes>
-                    <Route path="/" element={<Login />} />
-                    <Route path="/pet-meadow" element={<PetMeadow />} />
-                    <Route path="/sticky-note" element={<StickyNote />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/game" element={<Game />} />
-                    <Route path="*" element={<NotFound />} />
-                </Routes>
+                <AuthProvider>
+                    <Routes>
+                        <Route path="/" element={<Login />} />
+                        <Route element={<RouteGuard />}>
+                            <Route path="/pet-meadow" element={<PetMeadow />} />
+                            <Route path="/sticky-note" element={<StickyNote />} />
+                            <Route path="/game" element={<Game />} />
+                        </Route>
+                        <Route path="/about" element={<About />} />
+                        <Route path="*" element={<NotFound />} />
+                    </Routes>
+                </AuthProvider>
             </main>
 
             <footer className="p-6 text-center text-sm text-[hsl(319,25%,46%)]">
