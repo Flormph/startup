@@ -5,10 +5,11 @@ import { useAuthedFetch } from '../auth/auth.jsx';
 export function PetMeadow() {
     const [pet, setPet] = useState(null); // null while loading
     const [weather, setWeather] = useState('Sunny'); // Default weather state
+    const authedFetch = useAuthedFetch();
+
 
     // get weather from weatherstack API
     function fetchWeather() {
-        const authedFetch = useAuthedFetch();
         authedFetch('/api/weather')
             .then(response => response.json())
             .then(data => {
@@ -20,7 +21,6 @@ export function PetMeadow() {
     }
 
     useEffect(() => {
-        const authedFetch = useAuthedFetch();
         async function loadPet() {
             let res = await authedFetch('/api/pet');
 
