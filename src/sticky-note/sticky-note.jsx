@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { RouteGuard } from '../route-guard/route-guard.jsx';
 
 
 const ZONES = [
@@ -140,15 +141,40 @@ export function StickyNote() {
         return () => clearInterval(id);
     }, []);
 
+    useEffect(() => {
+        async function loadReminders() {
+            const res = await fetch('/api/notes', { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setReminders(data.map((n) => n.reminder));
+            }
+        }
+        loadReminders();
+    }, []);
+
     function setReminder(reminder) {
         setReminders((prevReminders) => [...prevReminders, reminder]);
+    }
+
+    async function saveReminder(reminder) {
+        setReminder(reminder);
+        try {
+            await fetch('/api/notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reminder),
+                credentials: 'include',
+            });
+        } catch (err) {
+            console.error('Failed to save reminder:', err);
+        }
     }
 
     useEffect(() => {
         if (!iconBeingDragged) return; // nothing being dragged
 
         function onMove(e) { handleDrag(iconBeingDragged, e); }
-        function onUp(e) { handleDragEnd(iconBeingDragged, e, setReminder); }
+        function onUp(e) { handleDragEnd(iconBeingDragged, e, saveReminder); }
 
         window.addEventListener('pointermove', onMove);
         window.addEventListener('pointerup', onUp);
