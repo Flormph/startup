@@ -148,14 +148,14 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
-- [ ] **Node.js/Express HTTP service** - I did not complete this part of the deliverable.
-- [ ] **Static middleware for frontend** - I did not complete this part of the deliverable.
-- [ ] **Calls to third party endpoints** - I did not complete this part of the deliverable.
-- [ ] **Backend service endpoints** - I did not complete this part of the deliverable.
-- [ ] **Frontend calls service endpoints** - I did not complete this part of the deliverable.
-- [ ] **Supports registration, login, logout, and restricted endpoint** - I did not complete this part of the deliverable.
-- [ ] **Uses BCrypt to hash passwords** - I did not complete this part of the deliverable.
+- [X] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
+- [X] **Node.js/Express HTTP service** - The app uses express for the backend
+- [X] **Static middleware for frontend** - I use the verifyAuth style setup from simon
+- [X] **Calls to third party endpoints** - Calls the weatherstack api
+- [X] **Backend service endpoints** - login, sticky-note and pet-meadow have their own endpoints.
+- [X] **Frontend calls service endpoints** - login, pet-meadow, and sticky-note frontends have service calls
+- [X] **Supports registration, login, logout, and restricted endpoint** - These requirements are met.
+- [X] **Uses BCrypt to hash passwords** - Passwords use Bcrypt hash
 
 ## 🚀 DB deliverable
 
