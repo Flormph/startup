@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+service/keys.env
+cookies.txt
 
 # .NET build output
 */AxolotlMapEditor/bin/
