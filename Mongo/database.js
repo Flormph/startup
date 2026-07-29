@@ -1,17 +1,19 @@
-const dns = require('dns');
-dns.setServers(['8.8.8.8', '8.8.4.4']);
+//const dns = require('dns');
+//dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const { MongoClient } = require('mongodb');
-const config = require('./dbconfig.json');
+const config = require('./dbConfig.json');
 
 const url =
     `mongodb+srv://${config.username}:${config.password}@${config.hostname}/?appName=Gedidone`;
 
 const client = new MongoClient(url);
-const db = client.db('rental');
-const collection = db.collection('house');
+const db = client.db('gedidone');
+const userCollection = db.collection('user');
+const noteCollection = db.collection('note');
+const axolotlStatsCollection = db.collection('axolotlStats');
 
-async function main() {
+(async function testConnection() {
     try {
         await db.command({ ping: 1 });
         console.log(`DB connected to ${config.hostname} successfully.`);
@@ -19,35 +21,75 @@ async function main() {
         console.log(`Connection failed to ${url} because ${ex.message}.`);
         process.exit(1);
     }
-    try {
-        // Insert a document
-        const house = {
-            name: 'Beachfront views',
-            summary: 'From your bedroom to the beach, no shoes required',
-            property_type: 'Condo',
-            beds: 1,
-        };
-        await collection.insertOne(house);
+})();
 
-        // Query the documents
-        const query = { property_type: 'Condo', beds: { $lt: 2 } };
-        const options = {
-            sort: { name: -1 },
-            limit: 10,
-        };
-        const cursor = collection.find(query, options);
-        const rentals = await cursor.toArray();
-        rentals.forEach((i) => console.log(i));
-
-        // Delete documents
-        await collection.deleteMany(query);
-    } catch (ex) {
-        console.log(`Database (${url}) error: ${ex.message}`);
-    } finally {
-        await client.close();
-    }
-
+function getUser(email) {
+    return userCollection.findOne({ email: email });
 }
 
+function getUserByToken(token) {
+    return userCollection.findOne({ token: token });
+}
 
-main();
+function getNotesByUser(user) {
+    return noteCollection.find({ userId: user._id }).toArray();
+}
+
+function getAxolotlStatsByUser(user) {
+    return axolotlStatsCollection.findOne({ userId: user._id });
+}
+
+async function createUser(user) {
+    await userCollection.insertOne(user);
+    return user;
+}
+
+async function createNote(note) {
+    await noteCollection.insertOne(note);
+    return note;
+}
+
+async function createAxolotlStats(stats) {
+    await axolotlStatsCollection.insertOne(stats);
+    return stats;
+}
+
+async function updateUser(user) {
+    await userCollection.updateOne({ email: user.email }, { $set: user });
+}
+
+async function updateUserRemoveAuth(user) {
+    await userCollection.updateOne({ email: user.email }, { $unset: { token: 1 } });
+}
+
+async function updateNote(note) {
+    await noteCollection.updateOne({ _id: note._id }, { $set: note });
+}
+
+async function removeNote(note) {
+    await noteCollection.deleteOne({ _id: note._id });
+}
+
+async function updateAxolotlStats(stats) {
+    await axolotlStatsCollection.updateOne({ userId: stats.userId }, { $set: stats });
+}
+
+async function removeAxolotlStats(stats) {
+    await axolotlStatsCollection.deleteOne({ userId: stats.userId });
+}
+
+module.exports = {
+    getUser,
+    getUserByToken,
+    getNotesByUser,
+    getAxolotlStatsByUser,
+    createUser,
+    updateUser,
+    updateUserRemoveAuth,
+    createNote,
+    createAxolotlStats,
+    updateNote,
+    removeNote,
+    updateAxolotlStats,
+    removeAxolotlStats
+};
