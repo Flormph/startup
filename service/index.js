@@ -8,16 +8,13 @@ const port = process.argv.length > 2 ? process.argv[2] : 4000;
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const uuid = require('uuid');
+const DB = require('../Mongo/database.js');
 
 const authCookieName = "token";
 
 app.use(express.static('public')); // Serve static files from the public directory
 app.use(express.json());
 app.use(cookieParser());
-
-let users = [];
-let notes = [];
-let axolotlStats = [];
 
 let apiRouter = express.Router();
 app.use('/api', apiRouter);
@@ -29,11 +26,11 @@ app.listen(port, () => {
 // CreateAuth creates a new user
 apiRouter.post('/auth/create', async (req, res) => {
     try {
-        if (await findUser('email', req.body.email)) {
+        if (await DB.getUser(req.body.email)) {
             res.status(409).send({ msg: 'Existing user' });
         } else {
             const user = await createUser(req.body.email, req.body.password);
-            createPetStats(user.id, req.body.petName);
+            await createPetStats(user._id, req.body.petName);
 
             setAuthCookie(res, user.token);
             res.send({ email: user.email });
@@ -48,10 +45,11 @@ apiRouter.post('/auth/create', async (req, res) => {
 // GetAuth login an existing user
 apiRouter.post('/auth/login', async (req, res) => {
     try {
-        const user = await findUser('email', req.body.email);
+        const user = await DB.getUser(req.body.email);
         if (user) {
             if (await bcrypt.compare(req.body.password, user.password)) {
                 user.token = uuid.v4();
+                await DB.updateUser(user);
                 setAuthCookie(res, user.token);
                 res.send({ email: user.email });
                 return;
@@ -67,9 +65,9 @@ apiRouter.post('/auth/login', async (req, res) => {
 // Logout removes the auth cookie and deletes the token from the user
 apiRouter.delete('/auth/logout', async (req, res) => {
     try {
-        const user = await findUser('token', req.cookies[authCookieName]);
+        const user = await DB.getUserByToken(req.cookies[authCookieName]);
         if (user) {
-            delete user.token;
+            await DB.updateUserRemoveAuth(user);
         }
         res.clearCookie(authCookieName);
         res.status(204).end();
@@ -82,7 +80,7 @@ apiRouter.delete('/auth/logout', async (req, res) => {
 // Middleware to verify authentication
 const verifyAuth = async (req, res, next) => {
     try {
-        const user = await findUser('token', req.cookies[authCookieName]);
+        const user = await DB.getUserByToken(req.cookies[authCookieName]);
         if (user) {
             req.user = user; // Attach user to request object for further use
             next();
@@ -100,7 +98,7 @@ const verifyAuth = async (req, res, next) => {
 apiRouter.get('/notes', verifyAuth, async (req, res) => {
     try {
         const user = req.user;
-        const userNotes = notes.filter(note => note.userId === user.id);
+        const userNotes = await DB.getNotesByUser(user);
         if (userNotes.length > 0) {
             res.send(userNotes);
         } else {
@@ -116,7 +114,7 @@ apiRouter.get('/notes', verifyAuth, async (req, res) => {
 apiRouter.get('/pet', verifyAuth, async (req, res) => {
     try {
         const user = req.user;
-        const userStats = axolotlStats.find(stats => stats.userId === user.id);
+        const userStats = await DB.getAxolotlStatsByUser(user);
         if (userStats) {
             res.send(userStats);
         } else {
@@ -134,11 +132,10 @@ apiRouter.post('/notes', verifyAuth, async (req, res) => {
     try {
         const user = req.user;
         const note = {
-            id: uuid.v4(),
-            userId: user.id,
+            userId: user._id,
             reminder: req.body.reminder,
         };
-        notes.push(note);
+        await DB.createNote(note);
         res.status(201).send(note);
     } catch (error) {
         console.error('Error creating note:', error);
@@ -149,11 +146,11 @@ apiRouter.post('/notes', verifyAuth, async (req, res) => {
 // CreatePet creates a new axolotl stats entry for the authenticated user
 apiRouter.post('/pet', verifyAuth, async (req, res) => {
     try {
-        const existingStats = axolotlStats.find(stats => stats.userId === req.user.id);
+        const existingStats = await DB.getAxolotlStatsByUser(req.user);
         if (existingStats) {
             return res.status(409).send({ msg: 'Pet stats already exist for user' });
         }
-        const stats = createPetStats(req.user.id, req.body.petName);
+        const stats = await createPetStats(req.user._id, req.body.petName);
         return res.status(201).send(stats);
     } catch (error) {
         console.error('Error creating pet stats:', error);
@@ -165,7 +162,7 @@ apiRouter.post('/pet', verifyAuth, async (req, res) => {
 apiRouter.put('/pet', verifyAuth, async (req, res) => {
     try {
         const user = req.user;
-        let userStats = axolotlStats.find(stats => stats.userId === user.id);
+        let userStats = await DB.getAxolotlStatsByUser(user);
         if (!userStats) {
             return res.status(404).send({ msg: 'No stats found for user' });
         }
@@ -176,6 +173,7 @@ apiRouter.put('/pet', verifyAuth, async (req, res) => {
                 userStats[field] = req.body[field];
             }
         }
+        await DB.updateAxolotlStats(userStats);
         res.send(userStats);
     } catch (error) {
         console.error('Error updating pet stats:', error);
@@ -222,33 +220,26 @@ app.use((req, res) => {
     }
 });
 
-function createPetStats(userId, petName) {
+async function createPetStats(userId, petName) {
     const stats = {
         userId: userId,
         petName: petName || 'Jimmy',
         excitement: 50,
         happiness: 50,
     };
-    axolotlStats.push(stats);
+    await DB.createAxolotlStats(stats);
     return stats;
 }
 
 async function createUser(email, password) {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = {
-        id: uuid.v4(),
         email: email,
         password: hashedPassword,
         token: uuid.v4(),
     };
-    users.push(user);
+    await DB.createUser(user);
     return user;
-}
-
-async function findUser(field, value) {
-    if (!value) return null;
-
-    return users.find((u) => u[field] === value);
 }
 
 function setAuthCookie(res, authToken) {
