@@ -149,6 +149,8 @@ apiRouter.post('/notes', verifyAuth, async (req, res) => {
             stats = applyDecay(stats);
             stats.excitement = Math.min(100, stats.excitement + EXCITEMENT_BUMP);
             await DB.updateAxolotlStats(stats);
+        } else {
+            console.warn('No axolotl stats found for user when creating note');
         }
 
         res.status(201).send(note);
@@ -274,8 +276,8 @@ function applyDecay(stats) {
 
     return {
         ...stats,
-        excitement: Math.max(0, stats.excitement - DECAY_RATES.excitementPerHour * hoursElapsed),
-        happiness: Math.max(0, stats.happiness - DECAY_RATES.happinessPerHour * hoursElapsed),
+        excitement: Math.max(0, Math.round(stats.excitement - DECAY_RATES.excitementPerHour * hoursElapsed)),
+        happiness: Math.max(0, Math.round(stats.happiness - DECAY_RATES.happinessPerHour * hoursElapsed)),
         lastUpdated: now,
     };
 }
