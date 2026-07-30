@@ -8,7 +8,7 @@ const port = process.argv.length > 2 ? process.argv[2] : 4000;
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const uuid = require('uuid');
-const DB = require('../Mongo/database.js');
+const DB = require('./database.js');
 
 const DECAY_RATES = {
     excitementPerHour: 2,
