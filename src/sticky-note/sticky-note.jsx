@@ -34,7 +34,6 @@ function createReminder({ iconId, xPct, yPct }) {
     }
     const zone = ZONES.find((z) => z.zoneId === zoneId);
     return {
-        id,
         zoneId,
         iconId: iconId,
         xPct,
@@ -130,6 +129,7 @@ function useDragSurface(zones) {
 }
 
 export function StickyNote() {
+    const authFetch = useAuthedFetch();
     const [reminders, setReminders] = useState([]);
     const { canvasRef, iconBeingDragged, handleDragStart, handleDrag, handleDragEnd } = useDragSurface(ZONES);
     const [now, setNow] = useState(Date.now());
@@ -143,11 +143,10 @@ export function StickyNote() {
 
     useEffect(() => {
         async function loadReminders() {
-            const authedFetch = useAuthedFetch();
-            const res = await authedFetch('/api/notes');
+            const res = await authFetch('/api/notes');
             if (res.ok) {
                 const data = await res.json();
-                setReminders(data.map((n) => n.reminder));
+                setReminders(data.map((n) => n.reminder).filter(Boolean));
             }
         }
         loadReminders();
@@ -160,11 +159,10 @@ export function StickyNote() {
     async function saveReminder(reminder) {
         setReminder(reminder);
         try {
-            const authedFetch = useAuthedFetch();
-            await authedFetch('/api/notes', {
+            await authFetch('/api/notes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(reminder),
+                body: JSON.stringify({ reminder }),
             });
         } catch (err) {
             console.error('Failed to save reminder:', err);
