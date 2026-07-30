@@ -10,6 +10,12 @@ const bcrypt = require('bcryptjs');
 const uuid = require('uuid');
 const DB = require('../Mongo/database.js');
 
+const DECAY_RATES = {
+    excitementPerHour: 2,
+    happinessPerHour: 1,
+};
+const EXCITEMENT_BUMP = 5;
+
 const authCookieName = "token";
 
 app.use(express.static('public')); // Serve static files from the public directory
@@ -113,9 +119,10 @@ apiRouter.get('/notes', verifyAuth, async (req, res) => {
 // GetPet returns the axolotl stats for the authenticated user
 apiRouter.get('/pet', verifyAuth, async (req, res) => {
     try {
-        const user = req.user;
-        const userStats = await DB.getAxolotlStatsByUser(user);
+        let userStats = await DB.getAxolotlStatsByUser(req.user);
         if (userStats) {
+            userStats = applyDecay(userStats);
+            await DB.updateAxolotlStats(userStats);
             res.send(userStats);
         } else {
             res.status(404).send({ msg: 'No stats found for user' });
@@ -136,6 +143,14 @@ apiRouter.post('/notes', verifyAuth, async (req, res) => {
             reminder: req.body.reminder,
         };
         await DB.createNote(note);
+
+        let stats = await DB.getAxolotlStatsByUser(user);
+        if (stats) {
+            stats = applyDecay(stats);
+            stats.excitement = Math.min(100, stats.excitement + EXCITEMENT_BUMP);
+            await DB.updateAxolotlStats(stats);
+        }
+
         res.status(201).send(note);
     } catch (error) {
         console.error('Error creating note:', error);
@@ -161,11 +176,12 @@ apiRouter.post('/pet', verifyAuth, async (req, res) => {
 // UpdatePet updates the axolotl stats for the authenticated user
 apiRouter.put('/pet', verifyAuth, async (req, res) => {
     try {
-        const user = req.user;
-        let userStats = await DB.getAxolotlStatsByUser(user);
+        let userStats = await DB.getAxolotlStatsByUser(req.user);
         if (!userStats) {
             return res.status(404).send({ msg: 'No stats found for user' });
         }
+
+        userStats = applyDecay(userStats);
 
         const allowedFields = ['petName', 'excitement', 'happiness'];
         for (const field of allowedFields) {
@@ -226,6 +242,7 @@ async function createPetStats(userId, petName) {
         petName: petName || 'Jimmy',
         excitement: 50,
         happiness: 50,
+        lastUpdated: Date.now(),
     };
     await DB.createAxolotlStats(stats);
     return stats;
@@ -248,4 +265,17 @@ function setAuthCookie(res, authToken) {
         secure: true,
         sameSite: 'strict',
     });
+}
+
+function applyDecay(stats) {
+    const now = Date.now();
+    const lastUpdated = stats.lastUpdated || now;
+    const hoursElapsed = (now - lastUpdated) / (1000 * 60 * 60);
+
+    return {
+        ...stats,
+        excitement: Math.max(0, stats.excitement - DECAY_RATES.excitementPerHour * hoursElapsed),
+        happiness: Math.max(0, stats.happiness - DECAY_RATES.happinessPerHour * hoursElapsed),
+        lastUpdated: now,
+    };
 }
