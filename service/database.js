@@ -1,8 +1,8 @@
-const dns = require('dns');
-dns.setServers(['8.8.8.8', '8.8.4.4']);
+//const dns = require('dns');
+//dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const { MongoClient } = require('mongodb');
-const config = require('./dbConfig.json');
+const config = require('../Mongo/dbConfig.json');
 
 const url =
     `mongodb+srv://${config.userName}:${config.password}@${config.hostname}/?appName=Gedidone`;
