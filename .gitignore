@@ -19,7 +19,7 @@ cookies.txt
 */AxolotlMapEditor/obj/
 *.user
 *dbconfig.json
-
+*dbConfig.json
 
 
 # Editor directories and files
