@@ -5,6 +5,7 @@ import { useAuthedFetch } from '../auth/auth.jsx';
 export function PetMeadow() {
     const [pet, setPet] = useState(null); // null while loading
     const [weather, setWeather] = useState('Sunny'); // Default weather state
+    const [editingName, setEditingName] = useState(false);
     const authedFetch = useAuthedFetch();
 
 
@@ -42,6 +43,24 @@ export function PetMeadow() {
         loadPet();
         fetchWeather();
     }, []);
+
+    async function saveName(newName) {
+        const trimmed = newName.trim();
+        if (!trimmed || trimmed === pet.petName) {
+            setEditingName(false);
+            return; // no real change
+        }
+        const res = await authedFetch('/api/pet', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ petName: trimmed }),
+        });
+        if (res.ok) {
+            const data = await res.json();
+            setPet(data); // Update the pet state with the new data
+        }
+        setEditingName(false);
+    }
 
     if (!pet) {
         return <main className="p-6 text-center text-[hsl(319,25%,46%)]">Loading meadow...</main>;
@@ -99,7 +118,26 @@ export function PetMeadow() {
 
     return (
         <main className="p-6 flex flex-col items-center gap-4">
-            <h1 className="text-2xl font-bold text-[hsl(319,25%,46%)]">{pet.petName}'s Meadow</h1>
+            {editingName ? (
+                <input
+                    autoFocus
+                    defaultValue={pet.petName}
+                    className="text-2xl font-bold text-[hsl(319,25%,46%)] text-center border-b-2 border-[hsl(319,25%,46%)] bg-transparent focus:outline-none"
+                    onBlur={(e) => saveName(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.target.blur();       // triggers onBlur save
+                        if (e.key === 'Escape') setEditingName(false); // cancel, no save
+                    }}
+                />
+            ) : (
+                <h1
+                    className="text-2xl font-bold text-[hsl(319,25%,46%)] cursor-pointer hover:opacity-70"
+                    onClick={() => setEditingName(true)}
+                    title="Click to rename"
+                >
+                    {pet.petName}'s Meadow
+                </h1>
+            )}
 
             <div id="meadow-scene" className={`relative w-full max-w-2xl h-96 overflow-hidden rounded-lg border-2 border-[hsl(319,25%,46%)] ${getSceneClasses(classifyWeather(weather))}`}>
                 <div className="absolute bottom-0 left-0 w-full h-1/4 bg-gradient-to-b from-green-500 to-green-100 border-t-2 border-green-500"></div>
