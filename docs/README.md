@@ -44,6 +44,9 @@
     -Various game updates
     -Locked an LLM in my basement and forced it to make a maptool for my game (Don't grade that I only wrote like 10% of the code)
 
+### 7/29/26 (missed a few here)
+    -Added Database connection
+
 ### Elevator pitch
 
 People with ADHD struggle with completing small tasks. When a task crosses their mind and they don't complete it immediately, they are unlikely to remember and complete it later. Various individuals develope niche strategies to combat this, such as placing sticky notes in visible areas. This app seeks to emulate these methods in a quick and easy to use manner. Essentially, a custom tool with a focus on low barrier of entry.
@@ -161,9 +164,9 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
-- [ ] **Stores data in MongoDB** - I did not complete this part of the deliverable.
-- [ ] **Stores credentials in MongoDB** - I did not complete this part of the deliverable.
+- [X] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
+- [X] **Stores data in MongoDB** - Mongo now persistently stores users, notes, and pet-stats
+- [X] **Stores credentials in MongoDB** - Credentials are stored with passwords bcrypted
 
 ## 🚀 WebSocket deliverable
 
