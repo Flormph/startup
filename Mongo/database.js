@@ -1,5 +1,5 @@
-//const dns = require('dns');
-//dns.setServers(['8.8.8.8', '8.8.4.4']);
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const { MongoClient } = require('mongodb');
 const config = require('./dbConfig.json');
@@ -55,7 +55,8 @@ async function createAxolotlStats(stats) {
 }
 
 async function updateUser(user) {
-    await userCollection.updateOne({ email: user.email }, { $set: user });
+    const { _id, ...updateFields } = user;
+    await userCollection.updateOne({ email: user.email }, { $set: updateFields });
 }
 
 async function updateUserRemoveAuth(user) {
@@ -63,7 +64,8 @@ async function updateUserRemoveAuth(user) {
 }
 
 async function updateNote(note) {
-    await noteCollection.updateOne({ _id: note._id }, { $set: note });
+    const { _id, ...updateFields } = note;
+    await noteCollection.updateOne({ _id: note._id }, { $set: updateFields });
 }
 
 async function removeNote(note) {
@@ -71,7 +73,8 @@ async function removeNote(note) {
 }
 
 async function updateAxolotlStats(stats) {
-    await axolotlStatsCollection.updateOne({ userId: stats.userId }, { $set: stats });
+    const { _id, ...updateFields } = stats;
+    await axolotlStatsCollection.updateOne({ userId: stats.userId }, { $set: updateFields });
 }
 
 async function removeAxolotlStats(stats) {
