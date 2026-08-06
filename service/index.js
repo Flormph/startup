@@ -1,5 +1,5 @@
-const dns = require('dns');  // Use if mongo is having ECONNREFUSED issues
-dns.setServers(['8.8.8.8', '8.8.4.4']);
+//const dns = require('dns');  // Use if mongo is having ECONNREFUSED issues
+//dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 require('dotenv').config();
 
