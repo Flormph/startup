@@ -10,6 +10,10 @@ export default defineConfig({
         target: 'http://localhost:4000', // wherever your Express server is actually running
         changeOrigin: true,
       },
+      '/ws': {
+        target: 'ws://localhost:4000',
+        ws: true,
+      },
     },
   },
 })
