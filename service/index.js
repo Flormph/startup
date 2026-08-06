@@ -1,14 +1,18 @@
-require('dotenv').config();
+const dns = require('dns');  // Use if mongo is having ECONNREFUSED issues
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
-const express = require('express');
-const app = express();
+require('dotenv').config();
 
 const port = process.argv.length > 2 ? process.argv[2] : 4000;
 
 const cookieParser = require('cookie-parser');
+const express = require('express');
 const bcrypt = require('bcryptjs');
 const uuid = require('uuid');
 const DB = require('./database.js');
+const app = express();
+const { WebSocketServer } = require('ws');
+
 
 const DECAY_RATES = {
     excitementPerHour: 2,
@@ -18,15 +22,61 @@ const EXCITEMENT_BUMP = 5;
 
 const authCookieName = "token";
 
+
 app.use(express.static('public')); // Serve static files from the public directory
 app.use(express.json());
 app.use(cookieParser());
 
+
 let apiRouter = express.Router();
 app.use('/api', apiRouter);
 
-app.listen(port, () => {
+
+const server = app.listen(port, () => {
     console.log(`Gedidone service listening on port ${port}`);
+});
+
+
+const wss = new WebSocketServer({ server, path: '/ws' });
+const presence = new Map(); // socket -> { petName, mood }
+
+
+function broadcast(message, exceptSocket = null) { // Tells everyone a message (join, leave) except the person joining/leaving
+    const payload = JSON.stringify(message);
+    wss.clients.forEach(client => {
+        if (client !== exceptSocket && client.readyState === client.OPEN) {
+            client.send(payload);
+        }
+    });
+}
+
+wss.on('connection', (socket) => {
+    socket.on('message', (raw) => {
+        let data;
+        try {
+            data = JSON.parse(raw);
+        } catch {
+            return; // Ignore invalid JSON
+        }
+
+        if (data.type === 'join') {
+            const info = { id: data.id, petName: data.petName, mood: data.mood, excitement: data.excitement };
+            presence.set(socket, info);
+
+            const others = [...presence.values()].filter((p) => p.id !== info.id);
+            socket.send(JSON.stringify({ type: 'update', pets: others }));
+
+            broadcast({ type: 'joined', pet: info }, socket);
+        }
+    })
+
+    socket.on('close', () => {
+        const info = presence.get(socket);
+        presence.delete(socket);
+        if (info) {
+            broadcast({ type: 'left', id: info.id });
+        }
+    });
 });
 
 // CreateAuth creates a new user
