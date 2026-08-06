@@ -61,6 +61,13 @@ wss.on('connection', (socket) => {
 
         if (data.type === 'join') {
             const info = { id: data.id, petName: data.petName, mood: data.mood, excitement: data.excitement };
+
+            for (const [existingSocket, existingInfo] of presence) {
+                if (existingInfo.id === info.id && existingSocket !== socket) {
+                    presence.delete(existingSocket);
+                }
+            }
+
             presence.set(socket, info);
 
             const others = [...presence.values()].filter((p) => p.id !== info.id);
@@ -68,13 +75,13 @@ wss.on('connection', (socket) => {
 
             broadcast({ type: 'joined', pet: info }, socket);
         }
-    })
+    });
 
     socket.on('close', () => {
         const info = presence.get(socket);
         presence.delete(socket);
         if (info) {
-            broadcast({ type: 'left', id: info.id });
+            broadcast({ type: 'left', id: info.id, petName: info.petName });
         }
     });
 });
