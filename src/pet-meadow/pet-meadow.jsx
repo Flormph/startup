@@ -1,13 +1,44 @@
 import { useState, useEffect } from 'react';
 import { useAuthedFetch } from '../auth/auth.jsx';
 
-
 export function PetMeadow() {
     const [pet, setPet] = useState(null); // null while loading
     const [weather, setWeather] = useState('Sunny'); // Default weather state
     const [editingName, setEditingName] = useState(false);
+    const [otherPets, setOtherPets] = useState([]); // Array of other pets in the meadow
     const authedFetch = useAuthedFetch();
 
+    useEffect(() => {
+        if (!pet) return; // Wait until pet is loaded
+
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const socket = new WebSocket(`${protocol}://${window.location.host}/ws`);
+
+        socket.onopen = () => {
+            socket.send(JSON.stringify({
+                type: 'join',
+                id: pet._id,
+                petName: pet.petName,
+                mood: getMoodLabel(pet.happiness),
+                excitement: getExcitementLabel(pet.excitement),
+            }));
+        }
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'update') {
+                setOtherPets(data.pets.slice(0, 4));
+            } else if (data.type === 'joined') {
+                setOtherPets((prev) => [...prev, data.pet].slice(0, 4));
+            } else if (data.type === 'left') {
+                setOtherPets((prev) => prev.filter((p) => p.id !== data.id));
+            }
+        };
+
+        return () => {
+            socket.close();
+        };
+    }, [pet?._id]); // Re-run effect if pet ID changes
 
     // get weather from weatherstack API
     function fetchWeather() {
@@ -144,7 +175,24 @@ export function PetMeadow() {
 
                 <img id="pet" src="axolotl.png" alt="Axolotl Pet"
                     className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-32 h-32 select-none" />
+                <div id="meadow-scene" className={`relative w-full max-w-2xl h-96 overflow-hidden rounded-lg border-2 border-[hsl(319,25%,46%)] ${getSceneClasses(classifyWeather(weather))}`}>
+                    <div className="absolute bottom-0 left-0 w-full h-1/4 bg-gradient-to-b from-green-500 to-green-100 border-t-2 border-green-500"></div>
 
+                    {otherPets.map((p, i) => (
+                        <div
+                            key={p.id}
+                            className="absolute bottom-[15%] flex flex-col items-center"
+                            style={{ left: `${10 + i * 15}%` }}
+                        >
+                            <img src="axolotl.png" className="w-16 h-16 select-none opacity-80" />
+                            <span className="text-xs text-[hsl(319,25%,46%)] font-bold">{p.petName}</span>
+                            <span className="text-[10px] text-[hsl(319,25%,46%)] opacity-70">{p.mood}</span>
+                        </div>
+                    ))}
+
+                    <img id="pet" src="axolotl.png" alt="Axolotl Pet"
+                        className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-32 h-32 select-none" />
+                </div>
             </div>
 
             <div className="bg-[#f3c3e0] border-2 border-[hsl(319,25%,46%)] rounded max-w-2xl text-center flex flex-row items-start gap-4 justify-center px-4 py-2">
