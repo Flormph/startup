@@ -6,6 +6,7 @@ export function PetMeadow() {
     const [weather, setWeather] = useState('Sunny'); // Default weather state
     const [editingName, setEditingName] = useState(false);
     const [otherPets, setOtherPets] = useState([]); // Array of other pets in the meadow
+    const [activityLog, setActivityLog] = useState([]);
     const authedFetch = useAuthedFetch();
 
     useEffect(() => {
@@ -30,8 +31,10 @@ export function PetMeadow() {
                 setOtherPets(data.pets.slice(0, 4));
             } else if (data.type === 'joined') {
                 setOtherPets((prev) => [...prev, data.pet].slice(0, 4));
+                setActivityLog((prev) => [`${data.pet.petName} joined the meadow`, ...prev].slice(0, 5));
             } else if (data.type === 'left') {
                 setOtherPets((prev) => prev.filter((p) => p.id !== data.id));
+                setActivityLog((prev) => [`${data.petName} left the meadow`, ...prev].slice(0, 5));
             }
         };
 
@@ -129,6 +132,13 @@ export function PetMeadow() {
                 return 'bg-gradient-to-b from-sky-300 to-sky-50';
         }
     }
+    function hueFromId(id) {
+        let hash = 0;
+        for (let i = 0; i < id.length; i++) {
+            hash = id.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return Math.abs(hash) % 360;
+    }
     function StatBar({ label, value, max = 100, color }) {
         const pct = Math.max(0, Math.min(100, (value / max) * 100));
         return (
@@ -170,30 +180,26 @@ export function PetMeadow() {
                 </h1>
             )}
 
+
             <div id="meadow-scene" className={`relative w-full max-w-2xl h-96 overflow-hidden rounded-lg border-2 border-[hsl(319,25%,46%)] ${getSceneClasses(classifyWeather(weather))}`}>
                 <div className="absolute bottom-0 left-0 w-full h-1/4 bg-gradient-to-b from-green-500 to-green-100 border-t-2 border-green-500"></div>
 
-                <img id="pet" src="axolotl.png" alt="Axolotl Pet"
-                    className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-32 h-32 select-none" />
-                <div id="meadow-scene" className={`relative w-full max-w-2xl h-96 overflow-hidden rounded-lg border-2 border-[hsl(319,25%,46%)] ${getSceneClasses(classifyWeather(weather))}`}>
-                    <div className="absolute bottom-0 left-0 w-full h-1/4 bg-gradient-to-b from-green-500 to-green-100 border-t-2 border-green-500"></div>
+                {otherPets.map((p, i) => (
+                    <div key={p.id} className="absolute bottom-[15%] flex flex-col items-center w-16" style={{ left: `${5 + i * 22}%` }}>
+                        <img src="axolotl.png" className="w-12 h-12 select-none opacity-80" style={{ filter: `hue-rotate(${hueFromId(p.id)}deg)` }} />
+                        <span className="text-xs text-[hsl(319,25%,46%)] font-bold truncate w-full text-center">{p.petName}</span>
+                        <span className="text-[10px] text-[hsl(319,25%,46%)] opacity-70 truncate w-full text-center">{p.mood}</span>
+                    </div>
+                ))}
 
-                    {otherPets.map((p, i) => (
-                        <div
-                            key={p.id}
-                            className="absolute bottom-[15%] flex flex-col items-center"
-                            style={{ left: `${10 + i * 15}%` }}
-                        >
-                            <img src="axolotl.png" className="w-16 h-16 select-none opacity-80" />
-                            <span className="text-xs text-[hsl(319,25%,46%)] font-bold">{p.petName}</span>
-                            <span className="text-[10px] text-[hsl(319,25%,46%)] opacity-70">{p.mood}</span>
-                        </div>
-                    ))}
-
-                    <img id="pet" src="axolotl.png" alt="Axolotl Pet"
-                        className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-32 h-32 select-none" />
-                </div>
+                <img id="pet" src="axolotl.png" alt="Axolotl Pet" className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-32 h-32 select-none" />
             </div>
+
+            {activityLog.length > 0 && (
+                <div className="w-full max-w-2xl bg-white border-2 border-[hsl(319,25%,46%)] rounded p-2 text-xs text-[hsl(319,25%,46%)] flex flex-col gap-1">
+                    {activityLog.map((msg, i) => <div key={i}>{msg}</div>)}
+                </div>
+            )}
 
             <div className="bg-[#f3c3e0] border-2 border-[hsl(319,25%,46%)] rounded max-w-2xl text-center flex flex-row items-start gap-4 justify-center px-4 py-2">
                 <div className="bg-[antiquewhite] border-2 border-[hsl(319,25%,46%)] px-3 py-1 rounded flex flex-col">
