@@ -139,6 +139,37 @@ export function PetMeadow() {
         }
         return Math.abs(hash) % 360;
     }
+
+    const PET_HALF_WIDTH_PCT = 4; // half of the pet's width in percentage of the meadow width
+
+    const MEADOW_SLOTS = [
+        { id: 'center', x0: 40, x1: 60 },
+        { id: 'left-outer', x0: 2 + PET_HALF_WIDTH_PCT, x1: 20 - PET_HALF_WIDTH_PCT },
+        { id: 'left-inner', x0: 22 + PET_HALF_WIDTH_PCT, x1: 38 - PET_HALF_WIDTH_PCT },
+        { id: 'right-inner', x0: 62 + PET_HALF_WIDTH_PCT, x1: 78 - PET_HALF_WIDTH_PCT },
+        { id: 'right-outer', x0: 80 + PET_HALF_WIDTH_PCT, x1: 98 - PET_HALF_WIDTH_PCT },
+    ];
+
+    const OUTER_SLOTS = MEADOW_SLOTS.filter((s) => s.id !== 'center');
+
+    function hashId(id) {
+        let hash = 0;
+        for (let i = 0; i < id.length; i++) {
+            hash = id.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return Math.abs(hash);
+    }
+
+    function getSlotPosition(id, slotIndex) {
+        const slot = OUTER_SLOTS[slotIndex % OUTER_SLOTS.length];
+        const h = hashId(id);
+        const left = slot.x0 + (h % (slot.x1 - slot.x0));
+        const floor = 0
+        const height_jitter = 3
+        const bottom = floor + ((h >> 4) % height_jitter); // small jitter (6–14%), always well below the main pet
+        return { left, bottom };
+    }
+
     function StatBar({ label, value, max = 100, color }) {
         const pct = Math.max(0, Math.min(100, (value / max) * 100));
         return (
@@ -184,13 +215,24 @@ export function PetMeadow() {
             <div id="meadow-scene" className={`relative w-full max-w-2xl h-96 overflow-hidden rounded-lg border-2 border-[hsl(319,25%,46%)] ${getSceneClasses(classifyWeather(weather))}`}>
                 <div className="absolute bottom-0 left-0 w-full h-1/4 bg-gradient-to-b from-green-500 to-green-100 border-t-2 border-green-500"></div>
 
-                {otherPets.map((p, i) => (
-                    <div key={p.id} className="absolute bottom-[15%] flex flex-col items-center w-16" style={{ left: `${5 + i * 22}%` }}>
-                        <img src="axolotl.png" className="w-12 h-12 select-none opacity-80" style={{ filter: `hue-rotate(${hueFromId(p.id)}deg)` }} />
-                        <span className="text-xs text-[hsl(319,25%,46%)] font-bold truncate w-full text-center">{p.petName}</span>
-                        <span className="text-[10px] text-[hsl(319,25%,46%)] opacity-70 truncate w-full text-center">{p.mood}</span>
-                    </div>
-                ))}
+                {otherPets.map((p, i) => {
+                    const pos = getSlotPosition(p.id, i);
+                    return (
+                        <div
+                            key={p.id}
+                            className="absolute z-10 flex flex-col items-center w-16"
+                            style={{ left: `${pos.left}%`, bottom: `${pos.bottom}%` }}
+                        >
+                            <img
+                                src="axolotl.png"
+                                className="w-12 h-12 select-none opacity-80"
+                                style={{ filter: `hue-rotate(${hashId(p.id) % 360}deg)` }}
+                            />
+                            <span className="text-xs text-[hsl(319,25%,46%)] font-bold truncate w-full text-center">{p.petName}</span>
+                            <span className="text-[10px] text-[hsl(319,25%,46%)] opacity-70 truncate w-full text-center">{p.mood}</span>
+                        </div>
+                    );
+                })}
 
                 <img id="pet" src="axolotl.png" alt="Axolotl Pet" className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-32 h-32 select-none" />
             </div>
