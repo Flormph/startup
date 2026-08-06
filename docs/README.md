@@ -172,9 +172,9 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
-- [ ] **Backend listens for WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **Frontend makes WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **Data sent over WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **WebSocket data displayed** - I did not complete this part of the deliverable.
-- [ ] **Application is fully functional** - I did not complete this part of the deliverable.
+- [X] I completed the prerequisites for this deliverable (Simon deployed, GitHub link, Git commits)
+- [X] **Backend listens for WebSocket connection** - I did complete this part of the deliverable.
+- [X] **Frontend makes WebSocket connection** - I did complete this part of the deliverable.
+- [X] **Data sent over WebSocket connection** - I did complete this part of the deliverable.
+- [X] **WebSocket data displayed** - I did complete this part of the deliverable. When another user is on the pet-meadow, their pet will appear in everyone else's meadow. An activity log will appear displaying joins and leaves.
+- [X] **Application is fully functional** - Although the usefulness of the app is diminished by being in browser and not as a mobile app, the app functions as the reminder app I laid out in my elevator pitch. There is more work to be done to improve the app, but the minimum specifications have been met.
